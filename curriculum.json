@@ -1,0 +1,192 @@
+{
+  "Excel": {
+    "1": {
+      "module_id": "EXCEL-L1",
+      "title": "Excel Foundations: Formulas, Formatting & Charts",
+      "estimated_hours": 10,
+      "key_topics": [
+        "Cell references and core formulas (SUM, AVERAGE, COUNT, IF)",
+        "Sorting, filtering and data validation",
+        "Tables, formatting and conditional formatting",
+        "Basic charts and data visualization"
+      ],
+      "youtube_search_query": "Excel tutorial for beginners full course"
+    },
+    "2": {
+      "module_id": "EXCEL-L2",
+      "title": "Excel Intermediate: Lookups, PivotTables & Cleaning",
+      "estimated_hours": 15,
+      "key_topics": [
+        "XLOOKUP and INDEX-MATCH lookups",
+        "PivotTables, PivotCharts and slicers",
+        "Logical and text functions (IFS, TEXT, LEFT, MID)",
+        "Data cleaning with Text to Columns and Remove Duplicates"
+      ],
+      "youtube_search_query": "Excel intermediate course XLOOKUP pivot tables"
+    },
+    "3": {
+      "module_id": "EXCEL-L3",
+      "title": "Excel Job-Ready: Power Query, DAX & Dashboards",
+      "estimated_hours": 20,
+      "key_topics": [
+        "Power Query for extract-transform-load",
+        "Power Pivot data model and DAX basics",
+        "Dynamic arrays (FILTER, UNIQUE, SORT, LET)",
+        "Interactive dashboard with slicers and KPIs"
+      ],
+      "youtube_search_query": "Excel dashboard Power Query Power Pivot data analyst course"
+    }
+  },
+  "Power BI": {
+    "1": {
+      "module_id": "PBI-L1",
+      "title": "Power BI Foundations: Import, Visuals & Publishing",
+      "estimated_hours": 10,
+      "key_topics": [
+        "Power BI Desktop interface and data import",
+        "Core visuals (bar, line, card, table, map)",
+        "Basic transformations in Power Query Editor",
+        "Publishing reports to Power BI Service"
+      ],
+      "youtube_search_query": "Power BI beginner full course"
+    },
+    "2": {
+      "module_id": "PBI-L2",
+      "title": "Power BI Intermediate: Data Modeling & DAX",
+      "estimated_hours": 16,
+      "key_topics": [
+        "Star schema design and relationships",
+        "DAX measures (CALCULATE, SUMX, FILTER)",
+        "Time intelligence (YTD, MoM, YoY)",
+        "Slicers, drill-through and bookmarks"
+      ],
+      "youtube_search_query": "Power BI data modeling DAX intermediate course"
+    },
+    "3": {
+      "module_id": "PBI-L3",
+      "title": "Power BI Job-Ready: Governance & End-to-End Projects",
+      "estimated_hours": 24,
+      "key_topics": [
+        "Advanced DAX and performance tuning",
+        "Row-level security",
+        "Dataflows, gateways and scheduled refresh",
+        "End-to-end portfolio dashboard project"
+      ],
+      "youtube_search_query": "Power BI end to end project data analyst"
+    }
+  },
+  "SQL": {
+    "1": {
+      "module_id": "SQL-L1",
+      "title": "SQL Foundations: Querying & Aggregation",
+      "estimated_hours": 12,
+      "key_topics": [
+        "SELECT, WHERE, ORDER BY and LIMIT",
+        "Aggregations with GROUP BY and HAVING",
+        "Filtering with AND, OR, IN, LIKE and BETWEEN",
+        "Creating tables and basic INSERT, UPDATE, DELETE"
+      ],
+      "youtube_search_query": "SQL tutorial for beginners full course"
+    },
+    "2": {
+      "module_id": "SQL-L2",
+      "title": "SQL Intermediate: Joins, CTEs & Subqueries",
+      "estimated_hours": 18,
+      "key_topics": [
+        "INNER, LEFT, RIGHT and FULL joins",
+        "Subqueries and common table expressions (CTEs)",
+        "CASE statements, string and date functions",
+        "Set operations (UNION, INTERSECT, EXCEPT)"
+      ],
+      "youtube_search_query": "SQL joins subqueries CTE intermediate course"
+    },
+    "3": {
+      "module_id": "SQL-L3",
+      "title": "SQL Job-Ready: Window Functions & Analytics",
+      "estimated_hours": 25,
+      "key_topics": [
+        "Window functions (RANK, LAG, LEAD, running totals)",
+        "Indexes and query optimization",
+        "Cohort, retention and funnel analysis",
+        "Interview-style problem solving"
+      ],
+      "youtube_search_query": "advanced SQL window functions data analyst interview questions"
+    }
+  },
+  "Python": {
+    "1": {
+      "module_id": "PY-L1",
+      "title": "Python Foundations for Data Analysis",
+      "estimated_hours": 15,
+      "key_topics": [
+        "Syntax, variables and data types",
+        "Control flow, loops and functions",
+        "Lists, dictionaries and file handling",
+        "Jupyter Notebook workflow"
+      ],
+      "youtube_search_query": "Python for data analysis beginners full course"
+    },
+    "2": {
+      "module_id": "PY-L2",
+      "title": "Python Intermediate: pandas & NumPy",
+      "estimated_hours": 20,
+      "key_topics": [
+        "DataFrames, indexing and filtering",
+        "groupby, merge and pivot_table",
+        "Cleaning missing values, duplicates and dtypes",
+        "NumPy arrays and vectorized operations"
+      ],
+      "youtube_search_query": "pandas tutorial data cleaning full course"
+    },
+    "3": {
+      "module_id": "PY-L3",
+      "title": "Python Job-Ready: EDA, Visualization & Projects",
+      "estimated_hours": 30,
+      "key_topics": [
+        "Visualization with matplotlib and seaborn",
+        "Exploratory data analysis workflow",
+        "Loading data from SQL, APIs, Excel and CSV",
+        "Automated reporting and end-to-end portfolio project"
+      ],
+      "youtube_search_query": "Python data analyst portfolio project EDA pandas seaborn"
+    }
+  },
+  "Stats": {
+    "1": {
+      "module_id": "STATS-L1",
+      "title": "Statistics Foundations: Descriptive Stats & Probability",
+      "estimated_hours": 12,
+      "key_topics": [
+        "Mean, median, mode and standard deviation",
+        "Probability rules and common distributions",
+        "Sampling and the central limit theorem",
+        "Outliers and reading distributions"
+      ],
+      "youtube_search_query": "statistics for data analysis beginners full course"
+    },
+    "2": {
+      "module_id": "STATS-L2",
+      "title": "Statistics Intermediate: Inference & Regression",
+      "estimated_hours": 16,
+      "key_topics": [
+        "Confidence intervals",
+        "Hypothesis testing (t-test, chi-square, ANOVA)",
+        "Correlation and simple linear regression",
+        "p-values and Type I/II errors"
+      ],
+      "youtube_search_query": "hypothesis testing confidence intervals statistics course"
+    },
+    "3": {
+      "module_id": "STATS-L3",
+      "title": "Statistics Job-Ready: Experimentation & Modeling",
+      "estimated_hours": 22,
+      "key_topics": [
+        "A/B test design and analysis",
+        "Multiple and logistic regression",
+        "Statistical power and sample size",
+        "Communicating uncertainty to stakeholders"
+      ],
+      "youtube_search_query": "A/B testing statistics for data analysts course"
+    }
+  }
+}

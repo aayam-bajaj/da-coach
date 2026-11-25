@@ -1,0 +1,197 @@
+[
+  {
+    "id": 1,
+    "track": "Excel",
+    "question": "You maintain a sales sheet where column A holds Product IDs. Prices live in a separate table named Prices (columns ID and Price). IDs in the Prices table are unsorted and other analysts sometimes insert columns into it. Which formula in B2 reliably returns the exact price and survives those column insertions?",
+    "options": [
+      "=VLOOKUP(A2, Prices, 2)",
+      "=XLOOKUP(A2, Prices[ID], Prices[Price])",
+      "=HLOOKUP(A2, Prices, 2, TRUE)",
+      "=INDEX(Prices[Price], A2)"
+    ],
+    "answer": "=XLOOKUP(A2, Prices[ID], Prices[Price])",
+    "explanation": "XLOOKUP defaults to exact match and references the lookup and return columns independently, so inserted columns do not break it. VLOOKUP without the fourth argument does an approximate match on unsorted data and relies on a fixed column index. HLOOKUP searches rows, not columns. INDEX with an ID as the row number returns the wrong row."
+  },
+  {
+    "id": 2,
+    "track": "Excel",
+    "question": "A sheet has Date in column A, Region in column B and Revenue in column C. Your manager asks for total Revenue for the West region in Q1 2026 (1 Jan to 31 Mar). Which formula is correct?",
+    "options": [
+      "=SUMIF(B:B, \"West\", C:C)",
+      "=SUMIFS(C:C, B:B, \"West\", A:A, \"Q1\")",
+      "=SUMIFS(C:C, B:B, \"West\", A:A, \">=\"&DATE(2026,1,1), A:A, \"<=\"&DATE(2026,3,31))",
+      "=COUNTIFS(B:B, \"West\", A:A, \">=\"&DATE(2026,1,1), A:A, \"<=\"&DATE(2026,3,31))"
+    ],
+    "answer": "=SUMIFS(C:C, B:B, \"West\", A:A, \">=\"&DATE(2026,1,1), A:A, \"<=\"&DATE(2026,3,31))",
+    "explanation": "SUMIFS supports multiple criteria, and concatenating comparison operators with DATE() gives a proper date-range filter. SUMIF ignores the date range, the text \"Q1\" does not match real date values, and COUNTIFS counts rows instead of summing revenue."
+  },
+  {
+    "id": 3,
+    "track": "Excel",
+    "question": "Your daily sales data grows by about 200 rows every day, and a PivotTable built on it keeps missing the newest rows until someone edits the source range. What is the best fix?",
+    "options": [
+      "Select entire columns as the source each time you refresh",
+      "Copy the data into a new sheet every morning and rebuild the PivotTable",
+      "Convert the source range to an Excel Table (Ctrl+T) and base the PivotTable on that Table, then refresh",
+      "Freeze the top row so new rows are picked up automatically"
+    ],
+    "answer": "Convert the source range to an Excel Table (Ctrl+T) and base the PivotTable on that Table, then refresh",
+    "explanation": "An Excel Table expands automatically as rows are added, so the PivotTable's source grows with it and only a refresh is needed. Manual range selection and daily rebuilds are error-prone, and freezing panes only affects scrolling, not data ranges."
+  },
+  {
+    "id": 4,
+    "track": "Power BI",
+    "question": "In your Power BI model, TOTALYTD and SAMEPERIODLASTYEAR return blank or incorrect values on a Sales fact table that has an OrderDate column. What is the most likely proper fix?",
+    "options": [
+      "Convert all measures into calculated columns",
+      "Disable auto date/time and delete the relationship to OrderDate",
+      "Switch the report to DirectQuery mode",
+      "Create a contiguous Date table, mark it as the date table, and relate its Date column to Sales[OrderDate]"
+    ],
+    "answer": "Create a contiguous Date table, mark it as the date table, and relate its Date column to Sales[OrderDate]",
+    "explanation": "Time-intelligence functions need a dedicated date dimension with continuous dates, marked as the date table and related to the fact table. Calculated columns, DirectQuery or removing relationships do not address this."
+  },
+  {
+    "id": 5,
+    "track": "Power BI",
+    "question": "You need a Profit Margin % visual that stays correct when users filter by region, product or month, and when totals are shown at any level. What is the best approach?",
+    "options": [
+      "Create a calculated column Profit/Revenue per row and set the visual to Average",
+      "Create a measure: Profit Margin % = DIVIDE(SUM(Sales[Profit]), SUM(Sales[Revenue]))",
+      "Create a calculated column and sum it in the visual",
+      "Import a pre-calculated margin column from the source and use Don't summarize"
+    ],
+    "answer": "Create a measure: Profit Margin % = DIVIDE(SUM(Sales[Profit]), SUM(Sales[Revenue]))",
+    "explanation": "A ratio must be computed after aggregation, so a measure that divides total profit by total revenue is correct at every filter context and total. Averaging or summing row-level ratios gives wrong results, and DIVIDE safely handles zero denominators."
+  },
+  {
+    "id": 6,
+    "track": "Power BI",
+    "question": "Regional managers must see only their own region's rows in a report published to the Power BI Service. Which implementation is correct?",
+    "options": [
+      "Hide the Region column in Report view so managers cannot see other regions",
+      "Use bookmarks to hide other regions' visuals from each manager",
+      "Publish a separate copy of the report for each region and share it manually",
+      "Create roles with a DAX filter on the Region table in Desktop, publish, then assign users or groups to the roles in the Service"
+    ],
+    "answer": "Create roles with a DAX filter on the Region table in Desktop, publish, then assign users or groups to the roles in the Service",
+    "explanation": "Row-level security defines DAX filters per role in the model and enforces them at the data level once users are assigned to roles in the Service. Hiding columns or using bookmarks only changes the presentation and does not secure data, and separate copies are unmaintainable."
+  },
+  {
+    "id": 7,
+    "track": "SQL",
+    "question": "You must list all customers who have never placed an order. Tables: customers(customer_id, name) and orders(order_id, customer_id). Which query is correct?",
+    "options": [
+      "SELECT c.name FROM customers c INNER JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_id IS NULL;",
+      "SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_id = NULL;",
+      "SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_id IS NULL;",
+      "SELECT c.name FROM customers c RIGHT JOIN orders o ON o.customer_id = c.customer_id;"
+    ],
+    "answer": "SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.order_id IS NULL;",
+    "explanation": "A LEFT JOIN keeps all customers, and unmatched ones have NULL order columns, which IS NULL then isolates (an anti-join). INNER JOIN cannot return unmatched rows, '= NULL' never evaluates to true, and the RIGHT JOIN returns orders rather than customers without orders."
+  },
+  {
+    "id": 8,
+    "track": "SQL",
+    "question": "From a products table with (product_id, category, revenue), you need the top 3 products by revenue within each category. Which approach is correct?",
+    "options": [
+      "SELECT * FROM products ORDER BY revenue DESC LIMIT 3;",
+      "SELECT category, MAX(revenue) FROM products GROUP BY category HAVING COUNT(*) <= 3;",
+      "SELECT * FROM products GROUP BY category LIMIT 3;",
+      "WITH ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC) AS rn FROM products) SELECT * FROM ranked WHERE rn <= 3;"
+    ],
+    "answer": "WITH ranked AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC) AS rn FROM products) SELECT * FROM ranked WHERE rn <= 3;",
+    "explanation": "ROW_NUMBER with PARTITION BY category restarts ranking in each category, and filtering rn <= 3 in an outer query keeps the top three per group. LIMIT applies to the whole result set, and the GROUP BY variants either collapse rows or are invalid."
+  },
+  {
+    "id": 9,
+    "track": "SQL",
+    "question": "A query on a 200-million-row orders table runs slowly even though order_date is indexed: SELECT COUNT(*) FROM orders WHERE YEAR(order_date) = 2026; What is the best fix?",
+    "options": [
+      "Rewrite it as WHERE order_date >= '2026-01-01' AND order_date < '2027-01-01'",
+      "Add DISTINCT to the query",
+      "Change COUNT(*) to COUNT(order_date)",
+      "Wrap the query in a subquery"
+    ],
+    "answer": "Rewrite it as WHERE order_date >= '2026-01-01' AND order_date < '2027-01-01'",
+    "explanation": "Applying a function to the indexed column makes the predicate non-sargable, forcing a scan. A range predicate on the raw column lets the optimizer use the index. DISTINCT, changing the COUNT argument, or wrapping in a subquery do not make the filter index-friendly."
+  },
+  {
+    "id": 10,
+    "track": "Python",
+    "question": "A pandas DataFrame df has multiple rows per customer_id, each with an updated_at timestamp. You need exactly one row per customer: the most recent one. Which code does this?",
+    "options": [
+      "df.drop_duplicates('customer_id')",
+      "df.sort_values('updated_at').drop_duplicates('customer_id', keep='last')",
+      "df.groupby('customer_id').sum()",
+      "df.dropna(subset=['customer_id'])"
+    ],
+    "answer": "df.sort_values('updated_at').drop_duplicates('customer_id', keep='last')",
+    "explanation": "Sorting by updated_at and keeping the last duplicate per customer_id retains the newest record. A bare drop_duplicates keeps the first occurrence in whatever order the data happens to be in, groupby().sum() aggregates numbers rather than selecting rows, and dropna only removes missing IDs."
+  },
+  {
+    "id": 11,
+    "track": "Python",
+    "question": "You have orders and customers DataFrames. Some orders reference customer_ids that are missing from customers, but your report must include every order. Which merge is correct?",
+    "options": [
+      "orders.merge(customers, on='customer_id', how='inner')",
+      "orders.merge(customers, on='customer_id', how='right')",
+      "pd.concat([orders, customers], axis=0)",
+      "orders.merge(customers, on='customer_id', how='left')"
+    ],
+    "answer": "orders.merge(customers, on='customer_id', how='left')",
+    "explanation": "A left merge keeps every row from orders and fills customer columns with NaN where no match exists. Inner drops unmatched orders, right keeps all customers instead of all orders, and concat stacks rows rather than joining on a key."
+  },
+  {
+    "id": 12,
+    "track": "Python",
+    "question": "You are building a model on data with a right-skewed 'income' column that has 8% missing values. To impute without leaking information from the test set, what should you do?",
+    "options": [
+      "Compute the mean on the full dataset before splitting, then fill all missing values",
+      "Compute the median on the training set only, then use it to fill missing values in both train and test",
+      "Drop every row containing a missing value from the test set only",
+      "Fill the missing values with 0 in both sets"
+    ],
+    "answer": "Compute the median on the training set only, then use it to fill missing values in both train and test",
+    "explanation": "Imputation statistics must be learned from training data only to avoid leakage, and the median is more robust than the mean for skewed data. Using the full dataset leaks test information, dropping test rows biases evaluation, and filling with 0 distorts the income distribution."
+  },
+  {
+    "id": 13,
+    "track": "Stats",
+    "question": "An A/B test with about 2 million users per arm shows conversion of 10.0% for control and 10.4% for the variant, with p = 0.03. What is the most appropriate interpretation?",
+    "options": [
+      "There is a 97% probability that the variant is truly better",
+      "The result is not significant because the lift is under 1 percentage point",
+      "It is statistically significant at the 5% level, but you should check the confidence interval and whether a 0.4 point lift is large enough to matter for the business",
+      "The variant is definitely better and should be shipped immediately"
+    ],
+    "answer": "It is statistically significant at the 5% level, but you should check the confidence interval and whether a 0.4 point lift is large enough to matter for the business",
+    "explanation": "With very large samples, small effects can be statistically significant, so practical significance and the confidence interval matter. A p-value is not the probability that the variant is better, significance does not depend on the lift being over 1 point, and shipping decisions should weigh effect size and cost."
+  },
+  {
+    "id": 14,
+    "track": "Stats",
+    "question": "Salaries at a company are heavily right-skewed because a handful of executives earn far more than everyone else. Which statistic best describes the typical employee's salary?",
+    "options": [
+      "The mean, because it uses every data point",
+      "The maximum, because it shows the earning potential",
+      "The median, because it is robust to extreme values",
+      "The range, because it captures the spread"
+    ],
+    "answer": "The median, because it is robust to extreme values",
+    "explanation": "In skewed data the mean is pulled toward the outliers, while the median stays near the center of the typical values. The maximum and the range do not describe a typical value."
+  },
+  {
+    "id": 15,
+    "track": "Stats",
+    "question": "A team tests 20 different metrics at the 5% significance level after an experiment and finds that exactly one metric is significant (p = 0.04). What is the best conclusion?",
+    "options": [
+      "The experiment clearly worked because a metric was significant",
+      "One false positive is expected by chance across 20 tests, so apply a multiple-comparison correction such as Bonferroni or treat the finding as exploratory",
+      "The p-value must be wrong because only one of 20 tests was significant",
+      "Increase the significance level to 10% so more metrics qualify"
+    ],
+    "answer": "One false positive is expected by chance across 20 tests, so apply a multiple-comparison correction such as Bonferroni or treat the finding as exploratory",
+    "explanation": "With 20 independent tests at alpha = 0.05, about one false positive is expected even if nothing changed. Correcting for multiple comparisons, or labelling the result exploratory and confirming it with a follow-up test, avoids overstating the evidence. Raising alpha makes the problem worse."
+  }
+]
