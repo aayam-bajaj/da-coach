@@ -1,7 +1,7 @@
-from portfolio_builder import PORTFOLIO_PROJECTS, build_resume_bullets
 import json
 from datetime import date
 from urllib.parse import quote_plus
+import pandas as pd
 import streamlit as st
 
 from progress_store import (
@@ -14,12 +14,25 @@ from progress_store import (
     toggle_module_status,
 )
 from youtube_curator import fetch_top_youtube_resources
-from sql_sandbox import SQL_CHALLENGES, execute_and_grade, get_expected_preview
+from sql_sandbox import SQL_CHALLENGES, execute_and_grade, init_sandbox_db
+
+try:
+    from sql_sandbox import get_expected_preview
+except ImportError:
+    def get_expected_preview(solution_sql: str) -> pd.DataFrame:
+        conn_tmp = init_sandbox_db()
+        try:
+            return pd.read_sql_query(solution_sql.strip().rstrip(";"), conn_tmp)
+        finally:
+            conn_tmp.close()
+
 from pandas_sandbox import PANDAS_CHALLENGES, get_messy_orders_df, run_pandas_sandbox
+from portfolio_builder import PORTFOLIO_PROJECTS, build_resume_bullets
+from ats_engine import analyze_jd_match, compute_track_scorecard, generate_project_readme
 from ai_tutor import stream_ai_tutor
 
 st.set_page_config(
-    page_title="DA Coach — Data Analyst Prep",
+    page_title="DA Coach — Data Analyst Studio",
     page_icon="📊",
     layout="wide",
 )
@@ -27,19 +40,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    /* Liquid Chrome Obsidian Canvas */
     .stApp {
-        background: radial-gradient(circle at 15% 8%, #1F2430 0%, #090A0F 55%, #050608 100%);
+        background: radial-gradient(circle at 12% 6%, #222736 0%, #0A0C12 48%, #050609 100%);
         color: #F8FAFC;
     }
     .block-container {
-        padding-top: 1.4rem;
-        padding-bottom: 2.5rem;
-        max-width: 1280px;
+        padding-top: 1.35rem;
+        padding-bottom: 2.6rem;
+        max-width: 1320px;
     }
 
-    /* Liquid Chrome Title */
+    /* Metallic Chrome Header */
     h1 {
-        background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 35%, #64748B 52%, #F8FAFC 78%, #94A3B8 100%);
+        background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 30%, #64748B 50%, #F8FAFC 76%, #94A3B8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800 !important;
@@ -47,56 +61,106 @@ st.markdown(
         margin-bottom: 0.15rem !important;
     }
 
-    /* Glass KPI Cards */
+    /* Frosted Chrome Metric Cards */
     div[data-testid="stMetric"] {
-        background: linear-gradient(145deg, rgba(30, 35, 48, 0.72), rgba(12, 14, 21, 0.88));
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(203, 213, 225, 0.16);
-        border-top: 1px solid rgba(255, 255, 255, 0.34);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10);
-        padding: 13px 16px;
-        border-radius: 13px;
+        background: linear-gradient(145deg, rgba(32, 38, 52, 0.74), rgba(11, 13, 20, 0.90));
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(226, 232, 240, 0.16);
+        border-top: 1px solid rgba(255, 255, 255, 0.36);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        padding: 14px 18px;
+        border-radius: 14px;
     }
 
-    /* Active Tab Polish */
+    /* Tabs Bar Polish */
+    div[data-baseweb="tab-list"] {
+        gap: 6px;
+        border-bottom: 1px solid rgba(203, 213, 225, 0.14);
+    }
+    button[data-baseweb="tab"] {
+        border-radius: 9px 9px 0 0 !important;
+        padding: 8px 14px !important;
+        font-weight: 600 !important;
+    }
     button[data-baseweb="tab"][aria-selected="true"] {
-        background: rgba(248, 250, 252, 0.08) !important;
-        border-radius: 8px 8px 0 0 !important;
+        background: linear-gradient(180deg, rgba(248, 250, 252, 0.12), rgba(248, 250, 252, 0.04)) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
     }
 
-    /* Expanders & Containers */
+    /* Glass Expanders & Code Containers */
     div[data-testid="stExpander"] {
-        background: rgba(17, 20, 29, 0.68);
+        background: rgba(16, 19, 28, 0.72);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(203, 213, 225, 0.14);
         border-radius: 12px;
     }
+    textarea, input {
+        border-radius: 10px !important;
+    }
 
-    /* Primary Chrome CTA */
+    /* Liquid Silver Primary Buttons */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #F8FAFC 0%, #CBD5E1 50%, #94A3B8 100%) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 52%, #94A3B8 100%) !important;
         color: #090A0F !important;
         font-weight: 700 !important;
-        border: 1px solid rgba(255, 255, 255, 0.85) !important;
+        border: 1px solid #FFFFFF !important;
         border-radius: 10px !important;
-        box-shadow: 0 4px 16px rgba(226, 232, 240, 0.18);
+        box-shadow: 0 4px 16px rgba(226, 232, 240, 0.22);
         transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     button[kind="primary"]:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.32);
+        box-shadow: 0 7px 22px rgba(255, 255, 255, 0.34);
     }
 
     /* Sidebar Chrome Rail */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0D1017 0%, #07080C 100%);
+        background: linear-gradient(180deg, #0D1018 0%, #07080D 100%);
         border-right: 1px solid rgba(203, 213, 225, 0.12);
+    }
+
+    /* Chrome Pill Badges */
+    .chrome-pill {
+        display: inline-block;
+        padding: 3px 10px;
+        margin: 2px 4px 2px 0;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: rgba(226, 232, 240, 0.10);
+        border: 1px solid rgba(226, 232, 240, 0.24);
+        color: #F1F5F9;
+    }
+    .chrome-pill-ok {
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(52, 211, 153, 0.42);
+        color: #A7F3D0;
+    }
+    .chrome-pill-gap {
+        background: rgba(245, 158, 11, 0.16);
+        border-color: rgba(251, 191, 36, 0.42);
+        color: #FDE68A;
+    }
+    .scorecard-box {
+        background: rgba(18, 22, 32, 0.78);
+        border: 1px solid rgba(203, 213, 225, 0.16);
+        border-radius: 12px;
+        padding: 12px 14px;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+def render_pills(items: list[str], variant: str = "default") -> str:
+    cls = "chrome-pill"
+    if variant == "ok":
+        cls += " chrome-pill-ok"
+    elif variant == "gap":
+        cls += " chrome-pill-gap"
+    return "".join(f'<span class="{cls}">{item}</span>' for item in items)
 
 
 @st.cache_data
@@ -234,8 +298,8 @@ est_weeks_left = round(remaining_hrs / weekly_budget, 1) if weekly_budget else 0
 next_mod = next((m for m in queue if m["module_id"] not in completed_ids), None)
 
 # --- Header & KPI Strip ---
-st.title("Data Analyst Prep Coach")
-st.caption("Calibrated study roadmap • Hands-on SQL & Pandas sandboxes • Cheatsheets & streaming AI coach")
+st.title("Data Analyst Prep Studio")
+st.caption("Calibrated study roadmap • SQL & Pandas sandboxes • ATS JD matcher & portfolio builder")
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Job Readiness", f"{readiness_pct}%")
@@ -253,17 +317,35 @@ if next_mod:
 else:
     st.success("All queued modules completed for your current skill calibration.")
 
-# --- 4 Clean Primary Modes ---
+# --- 5 Clean Primary Modes ---
 tab_plan, tab_lab, tab_study, tab_routine, tab_portfolio = st.tabs([
     "🏋️ Workout Plan",
     "💻 Practice Lab",
     "📘 Study & AI Coach",
     "📅 Routine & Check",
-    "🚀 Portfolio & Resume",
+    "🚀 Portfolio & ATS",
 ])
 
-# 1. WORKOUT PLAN
+# 1. WORKOUT PLAN + INTERVIEW READINESS SCORECARD
 with tab_plan:
+    st.markdown("#### Interview Readiness Scorecard")
+    scorecard = compute_track_scorecard(skills, queue, skipped, completed_ids)
+    sc_cols = st.columns(len(scorecard))
+    for col, item in zip(sc_cols, scorecard):
+        variant = "ok" if item["pct"] >= 80 else ("default" if item["pct"] >= 35 else "gap")
+        with col:
+            st.markdown(
+                f"""
+                <div class="scorecard-box">
+                    <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">{item['track']}</div>
+                    <div style="font-size:1.3rem; font-weight:800; margin-bottom:6px;">{item['pct']}%</div>
+                    {render_pills([item['status']], variant=variant)}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.divider()
     left, right = st.columns([1, 2.3])
     with left:
         st.markdown("#### Skipped (Already Strong)")
@@ -289,15 +371,19 @@ with tab_plan:
                     st.rerun()
 
                 if mod["key_topics"]:
-                    st.write("**Key Topics:**", " • ".join(str(t) for t in mod["key_topics"]))
+                    st.markdown(
+                        render_pills([str(t) for t in mod["key_topics"]]),
+                        unsafe_allow_html=True,
+                    )
 
                 fallback_url = (
                     f"https://www.youtube.com/results?search_query="
                     f"{quote_plus(mod['youtube_search_query'] + ' playlist')}"
                 )
-                b1, b2 = st.columns(2)
+                b1, b2, b3 = st.columns(3)
                 fetch_clicked = b1.button("Fetch Top Playlists", key=f"yt_{mod['module_id']}", use_container_width=True)
                 b2.link_button("Open YouTube Search", fallback_url, use_container_width=True)
+                guide_clicked = b3.button("Deep Study Guide", key=f"guide_{mod['module_id']}", use_container_width=True)
 
                 if fetch_clicked:
                     with st.spinner("Searching YouTube..."):
@@ -305,7 +391,8 @@ with tab_plan:
                         for v in videos:
                             views_str = f" • {v['views']:,} views" if v.get("views") else ""
                             st.markdown(f"- [{v['title']}]({v['url']}) — *{v['channel']}*{views_str}")
-                if st.button("Generate Deep Study Guide", key=f"guide_{mod['module_id']}", use_container_width=True):
+
+                if guide_clicked:
                     guide_prompt = (
                         f"Create a structured Data Analyst study guide for: [{mod['track']}] {mod['title']}.\n"
                         f"Key topics: {', '.join(str(t) for t in mod['key_topics'])}.\n"
@@ -329,6 +416,7 @@ with tab_lab:
             chosen_sql_title = st.selectbox("Select SQL Challenge", challenge_titles, key="sql_sel")
             sql_challenge = next(c for c in SQL_CHALLENGES if c["title"] == chosen_sql_title)
             st.info(sql_challenge["prompt"])
+
             for h_idx, hint_text in enumerate(sql_challenge.get("hints", []), 1):
                 with st.expander(f"💡 Progressive Hint {h_idx}"):
                     st.write(hint_text)
@@ -336,7 +424,7 @@ with tab_lab:
             with st.expander("👀 Expected Output Preview"):
                 st.dataframe(get_expected_preview(sql_challenge["solution"]), use_container_width=True)
 
-            with st.expander("Database Schema (`customers`, `products`, `orders`)", expanded=True):
+            with st.expander("Database Schema (`customers`, `products`, `orders`)", expanded=False):
                 st.code(
                     "customers(customer_id, name, city, segment, signup_date)\n"
                     "products(product_id, product_name, category, unit_price)\n"
@@ -353,7 +441,7 @@ with tab_lab:
             user_sql = st.text_area(
                 "SQL Query",
                 value=st.session_state[sql_state_key],
-                height=165,
+                height=180,
                 placeholder="SELECT ...",
                 key=f"sql_area_{chosen_sql_title}",
                 label_visibility="collapsed",
@@ -391,6 +479,7 @@ with tab_lab:
             chosen_p_title = st.selectbox("Select Pandas Challenge", p_titles, key="pd_sel")
             p_challenge = next(c for c in PANDAS_CHALLENGES if c["title"] == chosen_p_title)
             st.info(p_challenge["prompt"])
+
             for h_idx, hint_text in enumerate(p_challenge.get("hints", []), 1):
                 with st.expander(f"💡 Progressive Hint {h_idx}"):
                     st.write(hint_text)
@@ -410,7 +499,7 @@ with tab_lab:
             user_py = st.text_area(
                 "Pandas Code",
                 value=st.session_state[pd_state_key],
-                height=165,
+                height=180,
                 key=f"pd_area_{chosen_p_title}",
                 label_visibility="collapsed",
             )
@@ -549,59 +638,109 @@ with tab_routine:
                     else:
                         st.error(f"Scored {pct}% — consider dropping that slider by 1 level.")
 
-# 5. PORTFOLIO PROJECT & RESUME BULLET BUILDER
+# 5. PORTFOLIO & ATS CAREER STUDIO
 with tab_portfolio:
-    st.subheader("Guided Portfolio Projects & ATS Resume Bullets")
-    st.caption("Pick one scoped project per skill gap, ship a clean GitHub repo, and tailor metric-backed bullets.")
+    sub_proj, sub_ats = st.tabs(["🚀 Portfolio & GitHub README", "🎯 ATS JD Keyword & Gap Analyzer"])
 
-    proj_titles = [f"{p['title']} ({p['est_days']})" for p in PORTFOLIO_PROJECTS]
-    chosen_proj_label = st.selectbox("Select a Project Blueprint", proj_titles, key="proj_sel")
-    selected_proj = PORTFOLIO_PROJECTS[proj_titles.index(chosen_proj_label)]
+    with sub_proj:
+        proj_titles = [f"{p['title']} ({p['est_days']})" for p in PORTFOLIO_PROJECTS]
+        chosen_proj_label = st.selectbox("Select a Project Blueprint", proj_titles, key="proj_sel")
+        selected_proj = PORTFOLIO_PROJECTS[proj_titles.index(chosen_proj_label)]
 
-    p_left, p_right = st.columns([1.15, 1])
+        p_left, p_right = st.columns([1.1, 1])
 
-    with p_left:
-        st.markdown(f"#### {selected_proj['title']}")
-        st.write("**Stack:**", " • ".join(selected_proj["stack"]), f"| **Level:** {selected_proj['difficulty']}")
-        st.info(f"**Business Problem:** {selected_proj['business_problem']}")
-        st.write("**Suggested Dataset:**", selected_proj["dataset_idea"])
+        with p_left:
+            st.markdown(f"#### {selected_proj['title']}")
+            st.markdown(
+                render_pills(selected_proj["stack"] + [selected_proj["difficulty"]]),
+                unsafe_allow_html=True,
+            )
+            st.info(f"**Business Problem:** {selected_proj['business_problem']}")
+            st.write("**Suggested Dataset:**", selected_proj["dataset_idea"])
 
-        st.markdown("##### Step-by-Step Execution Checklist")
-        for s_idx, step_text in enumerate(selected_proj["steps"], 1):
-            st.checkbox(f"{s_idx}. {step_text}", key=f"pstep_{selected_proj['id']}_{s_idx}")
+            st.markdown("##### Step-by-Step Execution Checklist")
+            for s_idx, step_text in enumerate(selected_proj["steps"], 1):
+                st.checkbox(f"{s_idx}. {step_text}", key=f"pstep_{selected_proj['id']}_{s_idx}")
 
-    with p_right:
-        st.markdown("#### Resume Bullet Builder")
-        st.caption("Fill in real numbers from your project (or keep brackets as reminders until measured).")
+        with p_right:
+            st.markdown("#### Resume Bullet & GitHub README Builder")
+            m1, m2 = st.columns(2)
+            vol_val = m1.text_input("Rows / Records", value="25,000+", key=f"m_vol_{selected_proj['id']}")
+            pct_val = m2.text_input("Key % / Metric", value="14%", key=f"m_pct_{selected_proj['id']}")
+            seg_val = st.text_input(
+                "Scope (Categories / Months / Tools)",
+                value="6 categories & 12 months",
+                key=f"m_seg_{selected_proj['id']}",
+            )
 
-        m1, m2 = st.columns(2)
-        vol_val = m1.text_input("Rows / Records", value="25,000+", key=f"m_vol_{selected_proj['id']}")
-        pct_val = m2.text_input("Key % / Metric", value="14%", key=f"m_pct_{selected_proj['id']}")
-        seg_val = st.text_input("Scope (Categories / Months / Tools)", value="6 categories & 12 months", key=f"m_seg_{selected_proj['id']}")
-
-        bullets = build_resume_bullets(
-            selected_proj,
-            {
+            metric_map = {
                 "X,000+": vol_val,
                 "X%": pct_val,
                 "X": seg_val,
                 "one-time, repeat, and high-value": seg_val,
                 "Power BI / Excel": "Power BI",
                 "SQL / Python Pandas": "SQL and Python (Pandas)",
-            },
+            }
+            bullets = build_resume_bullets(selected_proj, metric_map)
+
+            st.markdown("##### ATS-Ready Resume Bullets")
+            st.code("\n".join(f"• {b}" for b in bullets), language="text")
+
+            with st.expander("📄 Copy-Ready GitHub `README.md` Template"):
+                readme_md = generate_project_readme(selected_proj, metric_map, bullets)
+                st.code(readme_md, language="markdown")
+
+            if st.button("Polish Bullets with AI Tutor", key=f"btn_polish_{selected_proj['id']}", use_container_width=True):
+                polish_prompt = (
+                    f"Rewrite these Data Analyst fresher resume bullets to be punchy, action-verb-led, and ATS-friendly "
+                    f"for project '{selected_proj['title']}' ({', '.join(selected_proj['stack'])}):\n"
+                    + "\n".join(f"- {b}" for b in bullets)
+                    + "\nProvide 3 tightened bullets plus 1 quick interview talking point."
+                )
+                st.write_stream(stream_ai_tutor(polish_prompt, gemini_key))
+
+    with sub_ats:
+        st.markdown("#### Paste a Target Data Analyst Job Description")
+        jd_input = st.text_area(
+            "Job Description",
+            height=180,
+            placeholder="Paste requirements & responsibilities from a Data Analyst JD (SQL, Pandas, Power BI, cohort/funnel, A/B testing...)",
+            key="jd_analyzer_text",
+            label_visibility="collapsed",
         )
 
-        st.markdown("##### Draft Resume Bullets")
-        for b in bullets:
-            st.markdown(f"- {b}")
+        a1, a2 = st.columns(2)
+        run_jd = a1.button("Run ATS Keyword & Gap Scan", type="primary", use_container_width=True, key="btn_run_jd")
+        ai_jd = a2.button("AI Deep JD Audit & Resume Tailoring", use_container_width=True, key="btn_ai_jd")
 
-        st.code("\n".join(f"• {b}" for b in bullets), language="text")
+        if run_jd and jd_input.strip():
+            res = analyze_jd_match(jd_input, skills, completed_ids)
+            st.metric("Estimated ATS Keyword Coverage", f"{res['match_pct']}%")
 
-        if st.button("Polish Bullets with AI Tutor", key=f"btn_polish_{selected_proj['id']}", use_container_width=True):
-            polish_prompt = (
-                f"Rewrite these Data Analyst fresher resume bullets to be punchy, action-verb-led, and ATS-friendly "
-                f"for project '{selected_proj['title']}' ({', '.join(selected_proj['stack'])}):\n"
-                + "\n".join(f"- {b}" for b in bullets)
-                + "\nProvide 3 tightened bullets plus 1 quick interview talking point."
+            c_ok, c_gap = st.columns(2)
+            with c_ok:
+                st.markdown("**Matched Keywords (Covered by Your Profile)**")
+                if res["matched"]:
+                    st.markdown(render_pills(res["matched"], variant="ok"), unsafe_allow_html=True)
+                else:
+                    st.caption("No calibrated keywords matched yet.")
+
+            with c_gap:
+                st.markdown("**Priority ATS Gaps to Close**")
+                if res["missing"]:
+                    st.markdown(render_pills(res["missing"], variant="gap"), unsafe_allow_html=True)
+                else:
+                    st.success("All detected JD keywords are covered!")
+
+            st.markdown("##### Suggested Gap-Closing Resume Bullets")
+            st.code("\n".join(f"• {b}" for b in res["gap_bullets"]), language="text")
+
+        if ai_jd and jd_input.strip():
+            ai_jd_prompt = (
+                f"Candidate calibrated skills (0-3 scale): {skills}.\n"
+                f"Target Data Analyst JD:\n{jd_input.strip()}\n\n"
+                "1. List top 6 ATS keywords from this JD.\n"
+                "2. Identify the candidate's biggest 2 gaps.\n"
+                "3. Write 3 tailored, honest resume bullets positioning the candidate's SQL/Pandas/BI prep studio and projects for this role."
             )
-            st.write_stream(stream_ai_tutor(polish_prompt, gemini_key))
+            st.write_stream(stream_ai_tutor(ai_jd_prompt, gemini_key))
