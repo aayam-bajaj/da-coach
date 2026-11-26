@@ -1,12 +1,21 @@
-from pandas_sandbox import PANDAS_CHALLENGES, get_messy_orders_df, run_pandas_sandbox
+from portfolio_builder import PORTFOLIO_PROJECTS, build_resume_bullets
 import json
-import sqlite3
-from datetime import date, datetime, timedelta
+from datetime import date
 from urllib.parse import quote_plus
 import streamlit as st
 
+from progress_store import (
+    export_progress_json,
+    get_completed_set,
+    get_conn,
+    get_streak_and_hours,
+    import_progress_json,
+    log_study_session,
+    toggle_module_status,
+)
 from youtube_curator import fetch_top_youtube_resources
-from sql_sandbox import SQL_CHALLENGES, execute_and_grade
+from sql_sandbox import SQL_CHALLENGES, execute_and_grade, get_expected_preview
+from pandas_sandbox import PANDAS_CHALLENGES, get_messy_orders_df, run_pandas_sandbox
 from ai_tutor import stream_ai_tutor
 
 st.set_page_config(
@@ -18,63 +27,71 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Deep Obsidian Canvas with Subtle Radial Chrome Glow */
     .stApp {
-        background: radial-gradient(circle at 15% 10%, #1E222D 0%, #090A0F 55%, #050608 100%);
+        background: radial-gradient(circle at 15% 8%, #1F2430 0%, #090A0F 55%, #050608 100%);
+        color: #F8FAFC;
     }
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 1.4rem;
         padding-bottom: 2.5rem;
+        max-width: 1280px;
     }
 
-    /* Liquid Chrome Metallic Title */
+    /* Liquid Chrome Title */
     h1 {
-        background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 35%, #64748B 50%, #F8FAFC 75%, #94A3B8 100%);
+        background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 35%, #64748B 52%, #F8FAFC 78%, #94A3B8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800 !important;
         letter-spacing: -0.03em;
+        margin-bottom: 0.15rem !important;
     }
 
-    /* Frosted Glass + Chrome Edge Metric Cards */
+    /* Glass KPI Cards */
     div[data-testid="stMetric"] {
-        background: linear-gradient(145deg, rgba(30, 34, 45, 0.7), rgba(13, 15, 22, 0.85));
+        background: linear-gradient(145deg, rgba(30, 35, 48, 0.72), rgba(12, 14, 21, 0.88));
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(226, 232, 240, 0.18);
-        border-top: 1px solid rgba(255, 255, 255, 0.35);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-        padding: 14px 18px;
-        border-radius: 14px;
+        border: 1px solid rgba(203, 213, 225, 0.16);
+        border-top: 1px solid rgba(255, 255, 255, 0.34);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+        padding: 13px 16px;
+        border-radius: 13px;
     }
 
-    /* Chrome Expanders & Containers */
+    /* Active Tab Polish */
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: rgba(248, 250, 252, 0.08) !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+
+    /* Expanders & Containers */
     div[data-testid="stExpander"] {
-        background: rgba(18, 20, 29, 0.65);
+        background: rgba(17, 20, 29, 0.68);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(203, 213, 225, 0.15);
+        border: 1px solid rgba(203, 213, 225, 0.14);
         border-radius: 12px;
     }
 
-    /* Liquid Silver Primary Buttons */
+    /* Primary Chrome CTA */
     button[kind="primary"] {
         background: linear-gradient(135deg, #F8FAFC 0%, #CBD5E1 50%, #94A3B8 100%) !important;
         color: #090A0F !important;
         font-weight: 700 !important;
-        border: 1px solid #FFFFFF !important;
+        border: 1px solid rgba(255, 255, 255, 0.85) !important;
         border-radius: 10px !important;
-        box-shadow: 0 4px 15px rgba(226, 232, 240, 0.2);
-        transition: all 0.2s ease;
+        box-shadow: 0 4px 16px rgba(226, 232, 240, 0.18);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     button[kind="primary"]:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.32);
     }
 
-    /* Glass Sidebar */
+    /* Sidebar Chrome Rail */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0D0F16 0%, #07080C 100%);
-        border-right: 1px solid rgba(226, 232, 240, 0.12);
+        background: linear-gradient(180deg, #0D1017 0%, #07080C 100%);
+        border-right: 1px solid rgba(203, 213, 225, 0.12);
     }
     </style>
     """,
@@ -82,98 +99,6 @@ st.markdown(
 )
 
 
-# --- Persistent SQLite Storage (progress.db) ---
-@st.cache_resource
-def get_conn():
-    conn = sqlite3.connect("progress.db", check_same_thread=False)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS completed_modules (
-            module_id TEXT PRIMARY KEY,
-            completed_at TEXT
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS study_logs (
-            log_date TEXT PRIMARY KEY,
-            hours_logged REAL,
-            notes TEXT
-        )
-    """)
-    conn.commit()
-    return conn
-
-
-conn = get_conn()
-
-
-def get_completed_set():
-    return {r[0] for r in conn.execute("SELECT module_id FROM completed_modules").fetchall()}
-
-
-def toggle_module_status(module_id: str, is_done: bool):
-    if is_done:
-        conn.execute(
-            "INSERT OR REPLACE INTO completed_modules (module_id, completed_at) VALUES (?, ?)",
-            (module_id, datetime.now().isoformat()),
-        )
-    else:
-        conn.execute("DELETE FROM completed_modules WHERE module_id = ?", (module_id,))
-    conn.commit()
-
-
-def log_study_session(log_dt: str, hours: float, notes: str):
-    conn.execute(
-        "INSERT OR REPLACE INTO study_logs (log_date, hours_logged, notes) VALUES (?, ?, ?)",
-        (log_dt, hours, notes),
-    )
-    conn.commit()
-
-
-def export_progress_json() -> str:
-    comp = [
-        {"module_id": r[0], "completed_at": r[1]}
-        for r in conn.execute("SELECT module_id, completed_at FROM completed_modules").fetchall()
-    ]
-    logs = [
-        {"log_date": r[0], "hours_logged": r[1], "notes": r[2]}
-        for r in conn.execute("SELECT log_date, hours_logged, notes FROM study_logs").fetchall()
-    ]
-    return json.dumps({"completed_modules": comp, "study_logs": logs}, indent=2)
-
-
-def import_progress_json(raw_text: str):
-    payload = json.loads(raw_text)
-    for item in payload.get("completed_modules", []):
-        conn.execute(
-            "INSERT OR REPLACE INTO completed_modules (module_id, completed_at) VALUES (?, ?)",
-            (item["module_id"], item.get("completed_at") or datetime.now().isoformat()),
-        )
-    for item in payload.get("study_logs", []):
-        conn.execute(
-            "INSERT OR REPLACE INTO study_logs (log_date, hours_logged, notes) VALUES (?, ?, ?)",
-            (item["log_date"], float(item["hours_logged"]), item.get("notes") or ""),
-        )
-    conn.commit()
-
-
-def get_streak_and_hours():
-    rows = conn.execute(
-        "SELECT log_date, hours_logged, notes FROM study_logs WHERE hours_logged > 0 ORDER BY log_date DESC"
-    ).fetchall()
-    total_hours = sum(r[1] for r in rows)
-    logged_dates = {date.fromisoformat(r[0]) for r in rows}
-
-    streak = 0
-    cursor = date.today()
-    if cursor not in logged_dates:
-        cursor = cursor - timedelta(days=1)
-    while cursor in logged_dates:
-        streak += 1
-        cursor -= timedelta(days=1)
-    return streak, round(total_hours, 1), rows
-
-
-# --- Load Curriculum & Study Data ---
 @st.cache_data
 def load_json(filename: str):
     with open(filename, "r", encoding="utf-8") as f:
@@ -190,8 +115,11 @@ except Exception as e:
     st.stop()
 
 
-def build_training_queue(raw_curriculum, skills):
+@st.cache_data
+def build_training_queue(raw_curriculum, skills_tuple: tuple):
+    skills = dict(skills_tuple)
     queue, skipped = [], []
+
     if isinstance(raw_curriculum, dict) and isinstance(raw_curriculum.get("tracks"), list):
         iterable_tracks = [
             (t.get("name") or t.get("track") or "Unknown", t.get("levels") or t.get("modules") or [])
@@ -243,20 +171,22 @@ def build_training_queue(raw_curriculum, skills):
     return skipped, queue
 
 
+conn = get_conn()
+
 # --- Sidebar ---
 with st.sidebar:
     st.markdown("### 🎯 Skill Calibration")
     skills = {
-        "Excel": st.slider("Excel", 0, 3, 3),
-        "Power BI": st.slider("Power BI / Tableau", 0, 3, 3),
-        "SQL": st.slider("SQL", 0, 3, 0),
-        "Python": st.slider("Python (Pandas)", 0, 3, 0),
-        "Stats": st.slider("Business Stats", 0, 3, 0),
+        "Excel": st.slider("Excel", 0, 3, 3, key="sk_excel"),
+        "Power BI": st.slider("Power BI / Tableau", 0, 3, 3, key="sk_bi"),
+        "SQL": st.slider("SQL", 0, 3, 0, key="sk_sql"),
+        "Python": st.slider("Python (Pandas)", 0, 3, 0, key="sk_py"),
+        "Stats": st.slider("Business Stats", 0, 3, 0, key="sk_stats"),
     }
 
     st.markdown("### ⏱️ Weekly Schedule")
-    hours_per_day = st.selectbox("Hours / day", [1, 2, 3, 4], index=1)
-    days_per_week = st.slider("Study days / week", 3, 7, 5)
+    hours_per_day = st.selectbox("Hours / day", [1, 2, 3, 4], index=1, key="sched_hpd")
+    days_per_week = st.slider("Study days / week", 3, 7, 5, key="sched_dpw")
     weekly_budget = hours_per_day * days_per_week
 
     st.markdown("### 🤖 AI Tutor Key")
@@ -268,63 +198,73 @@ with st.sidebar:
     )
 
     st.divider()
-    streak, total_logged_hrs, _ = get_streak_and_hours()
+    streak, total_logged_hrs, history = get_streak_and_hours(conn)
     c1, c2 = st.columns(2)
     c1.metric("Streak", f"{streak}d")
     c2.metric("Logged", f"{total_logged_hrs}h")
 
     st.divider()
-    st.markdown("### 💾 Backup Progress")
+    st.markdown("### 💾 Backup & Restore")
     st.download_button(
         "Export Progress JSON",
-        data=export_progress_json(),
+        data=export_progress_json(conn),
         file_name="da_coach_progress.json",
         mime="application/json",
         use_container_width=True,
     )
-    uploaded_backup = st.file_uploader("Restore JSON", type=["json"], label_visibility="collapsed")
-    if uploaded_backup is not None and st.button("Import Backup", use_container_width=True):
+    uploaded_backup = st.file_uploader("Restore JSON", type=["json"], label_visibility="collapsed", key="backup_up")
+    if uploaded_backup is not None and st.button("Import Backup", use_container_width=True, key="backup_apply"):
         try:
-            import_progress_json(uploaded_backup.getvalue().decode("utf-8"))
-            st.success("Progress restored!")
+            import_progress_json(conn, uploaded_backup.getvalue().decode("utf-8"))
+            st.success("Progress restored.")
             st.rerun()
         except Exception as e:
             st.error(f"Invalid backup file: {e}")
 
 
-# --- Main Header & KPIs ---
-skipped, queue = build_training_queue(curriculum, skills)
-completed_ids = get_completed_set()
+# --- Derived Metrics ---
+skipped, queue = build_training_queue(curriculum, tuple(sorted(skills.items())))
+completed_ids = get_completed_set(conn)
 
 total_required = len(skipped) + len(queue)
 done_count = len(skipped) + sum(1 for m in queue if m["module_id"] in completed_ids)
 readiness_pct = int((done_count / total_required) * 100) if total_required else 0
 remaining_hrs = sum(m["estimated_hours"] for m in queue if m["module_id"] not in completed_ids)
+est_weeks_left = round(remaining_hrs / weekly_budget, 1) if weekly_budget else 0.0
+next_mod = next((m for m in queue if m["module_id"] not in completed_ids), None)
 
+# --- Header & KPI Strip ---
 st.title("Data Analyst Prep Coach")
-st.caption("Strength-calibrated roadmaps • Curated YouTube playlists • Cheatsheets & drills • SQL Sandbox • AI Tutor")
+st.caption("Calibrated study roadmap • Hands-on SQL & Pandas sandboxes • Cheatsheets & streaming AI coach")
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Job Readiness", f"{readiness_pct}%")
 k2.metric("Modules Done", f"{done_count}/{total_required}")
 k3.metric("Weekly Target", f"{weekly_budget} hrs")
-k4.metric("Est. Weeks Left", f"{round(remaining_hrs / weekly_budget, 1) if weekly_budget else 0}")
+k4.metric("Est. Weeks Left", f"{est_weeks_left}")
 
 st.progress(readiness_pct / 100)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "🏋️ Training Queue",
-    "🧪 Skill Check",
-    "📘 Cheatsheets & Drills",
-    "📅 Daily Log",
-    "💻 SQL Sandbox",
-    "🤖 AI Tutor",
-    "🐼 Pandas Sandbox",
+if next_mod:
+    st.info(
+        f"**Next Up ({hours_per_day}h target):** [{next_mod['track']}] **{next_mod['title']}** "
+        f"({next_mod['estimated_hours']}h est.) — watch a curated playlist, drill the topic, and check it off."
+    )
+else:
+    st.success("All queued modules completed for your current skill calibration.")
+
+# --- 4 Clean Primary Modes ---
+tab_plan, tab_lab, tab_study, tab_routine, tab_portfolio = st.tabs([
+    "🏋️ Workout Plan",
+    "💻 Practice Lab",
+    "📘 Study & AI Coach",
+    "📅 Routine & Check",
+    "🚀 Portfolio & Resume",
 ])
 
-# TAB 1: Dynamic Roadmap + Curated Videos
-with tab1:
-    left, right = st.columns([1, 2.2])
+# 1. WORKOUT PLAN
+with tab_plan:
+    left, right = st.columns([1, 2.3])
     with left:
         st.markdown("#### Skipped (Already Strong)")
         if skipped:
@@ -336,24 +276,28 @@ with tab1:
     with right:
         st.markdown("#### Active Training Queue")
         if not queue:
-            st.success("All modules complete for your current skill settings!")
+            st.success("No remaining modules in queue.")
         for idx, mod in enumerate(queue, 1):
             is_done = mod["module_id"] in completed_ids
             icon = "✅" if is_done else "⬜"
             header = f"{icon} {idx}. [{mod['track']}] {mod['title']} — {mod['estimated_hours']}h"
-            with st.expander(header, expanded=(idx == 1 and not is_done)):
+
+            with st.expander(header, expanded=(next_mod is not None and mod["module_id"] == next_mod["module_id"])):
                 checked = st.checkbox("Mark Module Complete", value=is_done, key=f"chk_{mod['module_id']}")
                 if checked != is_done:
-                    toggle_module_status(mod["module_id"], checked)
+                    toggle_module_status(conn, mod["module_id"], checked)
                     st.rerun()
 
                 if mod["key_topics"]:
                     st.write("**Key Topics:**", " • ".join(str(t) for t in mod["key_topics"]))
 
-                fallback_url = f"https://www.youtube.com/results?search_query={quote_plus(mod['youtube_search_query'] + ' playlist')}"
+                fallback_url = (
+                    f"https://www.youtube.com/results?search_query="
+                    f"{quote_plus(mod['youtube_search_query'] + ' playlist')}"
+                )
                 b1, b2 = st.columns(2)
-                fetch_clicked = b1.button("Fetch Top Playlists", key=f"yt_{idx}", use_container_width=True)
-                b2.link_button("YouTube Search Results", fallback_url, use_container_width=True)
+                fetch_clicked = b1.button("Fetch Top Playlists", key=f"yt_{mod['module_id']}", use_container_width=True)
+                b2.link_button("Open YouTube Search", fallback_url, use_container_width=True)
 
                 if fetch_clicked:
                     with st.spinner("Searching YouTube..."):
@@ -361,189 +305,303 @@ with tab1:
                         for v in videos:
                             views_str = f" • {v['views']:,} views" if v.get("views") else ""
                             st.markdown(f"- [{v['title']}]({v['url']}) — *{v['channel']}*{views_str}")
-
-# TAB 2: Diagnostic Gate
-with tab2:
-    claimed_strong = [k for k, v in skills.items() if v >= 2]
-    if not claimed_strong:
-        st.info("Set any skill slider to 2 or 3 in the sidebar to run a verification check.")
-    else:
-        q_list = diagnostic_quiz if isinstance(diagnostic_quiz, list) else diagnostic_quiz.get("questions", [])
-        relevant_qs = [q for q in q_list if q.get("track") in claimed_strong]
-        st.markdown(f"#### Max-Rep Check: {', '.join(claimed_strong)}")
-
-        if not relevant_qs:
-            st.caption("No diagnostic questions found for the selected tracks.")
-        else:
-            with st.form("diag_form"):
-                answers = {}
-                for i, q in enumerate(relevant_qs):
-                    st.markdown(f"**{i+1}. [{q.get('track')}] {q.get('question')}**")
-                    answers[i] = st.radio(
-                        f"q_{i}",
-                        q.get("options", []),
-                        key=f"diag_{i}",
-                        label_visibility="collapsed",
+                if st.button("Generate Deep Study Guide", key=f"guide_{mod['module_id']}", use_container_width=True):
+                    guide_prompt = (
+                        f"Create a structured Data Analyst study guide for: [{mod['track']}] {mod['title']}.\n"
+                        f"Key topics: {', '.join(str(t) for t in mod['key_topics'])}.\n"
+                        "Include:\n"
+                        "1. Core Concept & Business Why (2-3 bullets)\n"
+                        "2. Syntax / Formula Cheat Block\n"
+                        "3. Common Interview Trap\n"
+                        "4. 1 Mini Practice Question with Answer"
                     )
-                submit_diag = st.form_submit_button("Check Score", type="primary")
+                    st.write_stream(stream_ai_tutor(guide_prompt, gemini_key))
 
-            if submit_diag:
-                score = sum(1 for i, q in enumerate(relevant_qs) if answers.get(i) == q.get("answer"))
-                for i, q in enumerate(relevant_qs):
-                    if answers.get(i) != q.get("answer"):
-                        st.warning(f"Q{i+1} [{q.get('track')}]: {q.get('explanation')}")
-                pct = round((score / len(relevant_qs)) * 100)
-                if pct >= 80:
-                    st.success(f"Passed ({pct}%) — your skipped modules stay unlocked.")
+# 2. PRACTICE LAB (SQL + PANDAS SUB-TABS)
+with tab_lab:
+    sub_sql, sub_pd = st.tabs(["💻 SQL Sandbox", "🐼 Pandas Cleaning Sandbox"])
+
+    with sub_sql:
+        col_prompt, col_editor = st.columns([1, 1.35])
+        with col_prompt:
+            st.markdown("#### Challenge")
+            challenge_titles = [c["title"] for c in SQL_CHALLENGES]
+            chosen_sql_title = st.selectbox("Select SQL Challenge", challenge_titles, key="sql_sel")
+            sql_challenge = next(c for c in SQL_CHALLENGES if c["title"] == chosen_sql_title)
+            st.info(sql_challenge["prompt"])
+            for h_idx, hint_text in enumerate(sql_challenge.get("hints", []), 1):
+                with st.expander(f"💡 Progressive Hint {h_idx}"):
+                    st.write(hint_text)
+
+            with st.expander("👀 Expected Output Preview"):
+                st.dataframe(get_expected_preview(sql_challenge["solution"]), use_container_width=True)
+
+            with st.expander("Database Schema (`customers`, `products`, `orders`)", expanded=True):
+                st.code(
+                    "customers(customer_id, name, city, segment, signup_date)\n"
+                    "products(product_id, product_name, category, unit_price)\n"
+                    "orders(order_id, customer_id, product_id, quantity, order_date, status)",
+                    language="sql",
+                )
+
+        with col_editor:
+            st.markdown("#### Query Editor")
+            sql_state_key = f"sql_draft_{chosen_sql_title}"
+            if sql_state_key not in st.session_state:
+                st.session_state[sql_state_key] = ""
+
+            user_sql = st.text_area(
+                "SQL Query",
+                value=st.session_state[sql_state_key],
+                height=165,
+                placeholder="SELECT ...",
+                key=f"sql_area_{chosen_sql_title}",
+                label_visibility="collapsed",
+            )
+            st.session_state[sql_state_key] = user_sql
+
+            c_run, c_hint = st.columns(2)
+            run_sql = c_run.button("Run & Grade SQL", type="primary", use_container_width=True, key="btn_run_sql")
+            ai_sql_hint = c_hint.button("AI Hint on Query", use_container_width=True, key="btn_hint_sql")
+
+            if run_sql and user_sql.strip():
+                df_out, err, passed = execute_and_grade(user_sql, sql_challenge["solution"])
+                if err:
+                    st.error(err)
                 else:
-                    st.error(f"Scored {pct}% — consider lowering that slider by 1 level.")
+                    st.dataframe(df_out, use_container_width=True)
+                    if passed:
+                        st.success("Exact match! Challenge solved.")
+                    else:
+                        st.warning("Query executed, but rows or values do not match expected output yet.")
 
-# TAB 3: Cheatsheets & Practice Drills
-with tab3:
-    vault_items = list(study_vault.items()) if isinstance(study_vault, dict) else [
-        (item.get("topic", f"Topic {i+1}"), item) for i, item in enumerate(study_vault)
-    ]
-    topic_names = [name for name, _ in vault_items]
-    selected_topic = st.selectbox("Select Topic", topic_names)
-    topic_data = dict(vault_items).get(selected_topic, {})
+            if ai_sql_hint and user_sql.strip():
+                review_prompt = (
+                    f"SQL Problem: {sql_challenge['prompt']}\n"
+                    f"Candidate SQL:\n```sql\n{user_sql}\n```\n"
+                    "Give a concise hint on any logic/syntax issue or optimization without revealing the full query."
+                )
+                st.write_stream(stream_ai_tutor(review_prompt, gemini_key))
 
-    st.markdown(topic_data.get("cheatsheet_markdown", "No cheatsheet available."))
-    st.divider()
-    st.markdown("#### Hands-On Drills")
-    for d_idx, drill in enumerate(topic_data.get("drills", []), 1):
-        st.markdown(f"**Drill {d_idx}:** {drill.get('prompt')}")
-        c_h, c_s = st.columns(2)
-        with c_h.expander("Hint"):
-            st.write(drill.get("hint", ""))
-        with c_s.expander("Solution"):
-            st.code(drill.get("solution_code", ""), language="sql")
+    with sub_pd:
+        p_col_left, p_col_right = st.columns([1, 1.35])
+        with p_col_left:
+            st.markdown("#### Cleaning Task")
+            p_titles = [c["title"] for c in PANDAS_CHALLENGES]
+            chosen_p_title = st.selectbox("Select Pandas Challenge", p_titles, key="pd_sel")
+            p_challenge = next(c for c in PANDAS_CHALLENGES if c["title"] == chosen_p_title)
+            st.info(p_challenge["prompt"])
+            for h_idx, hint_text in enumerate(p_challenge.get("hints", []), 1):
+                with st.expander(f"💡 Progressive Hint {h_idx}"):
+                    st.write(hint_text)
 
-# TAB 4: Daily Routine & Study Logger
-with tab4:
-    next_mod = next((m for m in queue if m["module_id"] not in completed_ids), None)
-    if next_mod:
-        st.info(
-            f"**Today's Focus ({hours_per_day}h):** [{next_mod['track']}] {next_mod['title']} — "
-            f"Watch 1 playlist video + complete 1 drill."
+            with st.expander("✅ Reference Solution"):
+                st.code(p_challenge.get("solution_code", ""), language="python")
+
+            with st.expander("Preview Raw Messy Dataset (`orders`)", expanded=False):
+                st.dataframe(get_messy_orders_df(), use_container_width=True)
+
+        with p_col_right:
+            st.markdown("#### Pandas Code (`df` Preloaded)")
+            pd_state_key = f"pd_draft_{chosen_p_title}"
+            if pd_state_key not in st.session_state:
+                st.session_state[pd_state_key] = p_challenge["starter_code"]
+
+            user_py = st.text_area(
+                "Pandas Code",
+                value=st.session_state[pd_state_key],
+                height=165,
+                key=f"pd_area_{chosen_p_title}",
+                label_visibility="collapsed",
+            )
+            st.session_state[pd_state_key] = user_py
+
+            b_run, b_ai = st.columns(2)
+            run_pd = b_run.button("Run & Check Cleaning", type="primary", use_container_width=True, key="btn_run_pd")
+            ask_pd_ai = b_ai.button("AI Hint on Pandas", use_container_width=True, key="btn_hint_pd")
+
+            if run_pd and user_py.strip():
+                out_df, nulls, err, passed = run_pandas_sandbox(user_py, p_challenge)
+                if err:
+                    st.error(err)
+                else:
+                    st.dataframe(out_df, use_container_width=True)
+                    st.caption(f"Null counts after run: {nulls}")
+                    if passed:
+                        st.success(p_challenge["success_msg"])
+                    else:
+                        st.warning("Code ran, but one or more cleaning requirements are not met yet.")
+
+            if ask_pd_ai and user_py.strip():
+                pd_prompt = (
+                    f"Pandas cleaning task: {p_challenge['prompt']}\n"
+                    f"User code:\n```python\n{user_py}\n```\n"
+                    "Give a concise hint on fixing bugs or edge cases without giving away the full answer."
+                )
+                st.write_stream(stream_ai_tutor(pd_prompt, gemini_key))
+
+# 3. STUDY & AI COACH
+with tab_study:
+    sub_vault, sub_ai = st.tabs(["📘 Cheatsheets & Drills", "🤖 Live AI Tutor"])
+
+    with sub_vault:
+        vault_items = (
+            list(study_vault.items())
+            if isinstance(study_vault, dict)
+            else [(item.get("topic", f"Topic {i + 1}"), item) for i, item in enumerate(study_vault)]
         )
-    else:
-        st.success("All queued modules completed!")
+        topic_names = [name for name, _ in vault_items]
+        selected_topic = st.selectbox("Select Study Topic", topic_names, key="vault_topic")
+        topic_data = dict(vault_items).get(selected_topic, {})
 
-    with st.form("daily_log_form"):
-        c_d, c_h = st.columns(2)
-        log_day = c_d.date_input("Date", value=date.today())
-        hrs = c_h.number_input("Hours studied", min_value=0.5, max_value=12.0, value=float(hours_per_day), step=0.5)
-        notes = st.text_input("Session notes", placeholder="e.g., Finished SQL Joins + 2 drills")
-        saved = st.form_submit_button("Log Session", type="primary")
+        st.markdown(topic_data.get("cheatsheet_markdown", "No cheatsheet available."))
+        st.divider()
+        st.markdown("#### Practice Drills")
+        for d_idx, drill in enumerate(topic_data.get("drills", []), 1):
+            st.markdown(f"**Drill {d_idx}:** {drill.get('prompt')}")
+            c_h, c_s = st.columns(2)
+            with c_h.expander("Hint"):
+                st.write(drill.get("hint", ""))
+            with c_s.expander("Solution"):
+                st.code(drill.get("solution_code", ""), language="sql")
 
-    if saved:
-        log_study_session(log_day.isoformat(), hrs, notes)
-        st.success("Session logged!")
-        st.rerun()
-
-    _, _, history = get_streak_and_hours()
-    if history:
-        st.markdown("#### Recent Sessions")
-        for dt_str, h, n in history[:7]:
-            note_part = f" — {n}" if n else ""
-            st.write(f"- **{dt_str}**: {h}h{note_part}")
-
-# TAB 5: Interactive SQL Sandbox
-with tab5:
-    st.subheader("Interactive SQL Sandbox")
-    with st.expander("Database Schema (`customers`, `products`, `orders`)", expanded=True):
-        st.code(
-            "customers(customer_id, name, city, segment, signup_date)\n"
-            "products(product_id, product_name, category, unit_price)\n"
-            "orders(order_id, customer_id, product_id, quantity, order_date, status)",
-            language="sql",
+    with sub_ai:
+        st.markdown("#### Ask Your Data Analyst Coach")
+        mode = st.radio(
+            "Response Mode",
+            ["Generate Study Guide", "Explain Concept", "Mock Interview Question"],
+            horizontal=True,
+            key="ai_mode",
         )
+        default_topic = f"{next_mod['track']} — {next_mod['title']}" if next_mod else ""
+        topic_input = st.text_input(
+            "Topic or Question",
+            value=default_topic,
+            placeholder="e.g., Window functions vs GROUP BY, or explain p-value in A/B testing",
+            key="ai_topic_input",
+        )
+        if st.button("Ask Coach", type="primary", key="btn_ask_coach") and topic_input.strip():
+            weak_skills = [k for k, v in skills.items() if v == 0]
+            full_prompt = f"Mode: {mode} | Unstarted tracks: {weak_skills} | Request: {topic_input.strip()}"
+            st.write_stream(stream_ai_tutor(full_prompt, gemini_key))
 
-    challenge_titles = [c["title"] for c in SQL_CHALLENGES]
-    chosen_title = st.selectbox("Select Challenge", challenge_titles)
-    challenge = next(c for c in SQL_CHALLENGES if c["title"] == chosen_title)
+# 4. ROUTINE & SKILL CHECK
+with tab_routine:
+    sub_log, sub_diag = st.tabs(["📅 Daily Study Log", "🧪 Skill Verification Gate"])
 
-    st.info(challenge["prompt"])
-    user_sql = st.text_area("Write your SQL query:", height=150, placeholder="SELECT ...")
+    with sub_log:
+        col_form, col_hist = st.columns([1.2, 1])
+        with col_form:
+            st.markdown("#### Log Today's Session")
+            with st.form("daily_log_form"):
+                c_d, c_h = st.columns(2)
+                log_day = c_d.date_input("Date", value=date.today())
+                hrs = c_h.number_input("Hours studied", min_value=0.5, max_value=12.0, value=float(hours_per_day), step=0.5)
+                notes = st.text_input("Session notes", placeholder="e.g., Completed SQL Joins + 2 drills")
+                saved = st.form_submit_button("Save Session", type="primary", use_container_width=True)
 
-    c_run, c_help = st.columns(2)
-    run_sql = c_run.button("Run & Grade SQL", type="primary", use_container_width=True)
-    ai_hint = c_help.button("Ask AI Tutor to Review SQL", use_container_width=True)
+            if saved:
+                log_study_session(conn, log_day.isoformat(), hrs, notes)
+                st.success("Session saved.")
+                st.rerun()
 
-    if run_sql and user_sql.strip():
-        df_out, err, passed = execute_and_grade(user_sql, challenge["solution"])
-        if err:
-            st.error(err)
-        else:
-            st.dataframe(df_out, use_container_width=True)
-            if passed:
-                st.success("Exact match! Challenge solved.")
+        with col_hist:
+            st.markdown("#### Recent Sessions")
+            if history:
+                for dt_str, h, n in history[:8]:
+                    note_part = f" — {n}" if n else ""
+                    st.markdown(f"- **{dt_str}**: {h}h{note_part}")
             else:
-                st.warning("Query ran, but results don't match the expected output yet.")
+                st.caption("No study sessions logged yet.")
 
-    if ai_hint and user_sql.strip():
-        review_prompt = (
-            f"Problem: {challenge['prompt']}\n"
-            f"User's SQL:\n{user_sql}\n"
-            "Give a concise hint on any logic/syntax issue or optimization without giving the full answer."
-        )
-        st.write_stream(stream_ai_tutor(review_prompt, gemini_key))
-
-# TAB 6: Streaming AI Tutor
-with tab6:
-    st.subheader("Live AI Data Analyst Tutor")
-    mode = st.radio(
-        "Mode",
-        ["Generate Study Guide", "Explain Concept", "Mock Interview Question"],
-        horizontal=True,
-    )
-    topic_input = st.text_input(
-        "Topic or Question",
-        placeholder="e.g., Window functions vs GROUP BY, or Explain p-value in A/B testing",
-    )
-    if st.button("Ask Coach", type="primary") and topic_input.strip():
-        weak_skills = [k for k, v in skills.items() if v == 0]
-        full_prompt = f"Mode: {mode} | Unstarted tracks: {weak_skills} | Request: {topic_input.strip()}"
-        st.write_stream(stream_ai_tutor(full_prompt, gemini_key))
-
-# TAB 7: Interactive Pandas Data Cleaning Sandbox
-with tab7:
-    st.subheader("Pandas Data Cleaning Sandbox")
-    with st.expander("Preview Raw Messy Dataset (`orders`)", expanded=False):
-        st.dataframe(get_messy_orders_df(), use_container_width=True)
-
-    p_titles = [c["title"] for c in PANDAS_CHALLENGES]
-    chosen_p = st.selectbox("Select Cleaning Challenge", p_titles)
-    p_challenge = next(c for c in PANDAS_CHALLENGES if c["title"] == chosen_p)
-
-    st.info(p_challenge["prompt"])
-    user_py = st.text_area(
-        "Write your Pandas code (`df` is preloaded):",
-        value=p_challenge["starter_code"],
-        height=150,
-        key=f"pd_code_{chosen_p}",
-    )
-
-    b_run, b_ai = st.columns(2)
-    run_pd = b_run.button("Run & Check Cleaning", type="primary", use_container_width=True)
-    ask_pd_ai = b_ai.button("Ask AI Tutor to Review Pandas", use_container_width=True)
-
-    if run_pd and user_py.strip():
-        out_df, nulls, err, passed = run_pandas_sandbox(user_py, p_challenge)
-        if err:
-            st.error(err)
+    with sub_diag:
+        claimed_strong = [k for k, v in skills.items() if v >= 2]
+        if not claimed_strong:
+            st.info("Slide any skill to Level 2 or 3 in the sidebar to verify your strength before skipping modules.")
         else:
-            st.dataframe(out_df, use_container_width=True)
-            st.caption(f"Null counts after run: {nulls}")
-            if passed:
-                st.success(p_challenge["success_msg"])
-            else:
-                st.warning("Code ran, but one or more cleaning requirements aren't met yet.")
+            q_list = diagnostic_quiz if isinstance(diagnostic_quiz, list) else diagnostic_quiz.get("questions", [])
+            relevant_qs = [q for q in q_list if q.get("track") in claimed_strong]
+            st.markdown(f"#### Max-Rep Check: {', '.join(claimed_strong)}")
 
-    if ask_pd_ai and user_py.strip():
-        pd_prompt = (
-            f"Data cleaning task: {p_challenge['prompt']}\n"
-            f"User's Pandas code:\n```python\n{user_py}\n```\n"
-            "Give a brief, practical hint on fixing any bugs or edge cases without giving away the full solution."
+            if not relevant_qs:
+                st.caption("No diagnostic questions found for the selected tracks.")
+            else:
+                with st.form("diag_form"):
+                    answers = {}
+                    for i, q in enumerate(relevant_qs):
+                        st.markdown(f"**{i + 1}. [{q.get('track')}] {q.get('question')}**")
+                        answers[i] = st.radio(
+                            f"q_{i}",
+                            q.get("options", []),
+                            key=f"diag_{i}",
+                            label_visibility="collapsed",
+                        )
+                    submit_diag = st.form_submit_button("Check Score", type="primary")
+
+                if submit_diag:
+                    score = sum(1 for i, q in enumerate(relevant_qs) if answers.get(i) == q.get("answer"))
+                    for i, q in enumerate(relevant_qs):
+                        if answers.get(i) != q.get("answer"):
+                            st.warning(f"Q{i + 1} [{q.get('track')}]: {q.get('explanation')}")
+                    pct = round((score / len(relevant_qs)) * 100)
+                    if pct >= 80:
+                        st.success(f"Passed ({pct}%) — skipped modules stay unlocked.")
+                    else:
+                        st.error(f"Scored {pct}% — consider dropping that slider by 1 level.")
+
+# 5. PORTFOLIO PROJECT & RESUME BULLET BUILDER
+with tab_portfolio:
+    st.subheader("Guided Portfolio Projects & ATS Resume Bullets")
+    st.caption("Pick one scoped project per skill gap, ship a clean GitHub repo, and tailor metric-backed bullets.")
+
+    proj_titles = [f"{p['title']} ({p['est_days']})" for p in PORTFOLIO_PROJECTS]
+    chosen_proj_label = st.selectbox("Select a Project Blueprint", proj_titles, key="proj_sel")
+    selected_proj = PORTFOLIO_PROJECTS[proj_titles.index(chosen_proj_label)]
+
+    p_left, p_right = st.columns([1.15, 1])
+
+    with p_left:
+        st.markdown(f"#### {selected_proj['title']}")
+        st.write("**Stack:**", " • ".join(selected_proj["stack"]), f"| **Level:** {selected_proj['difficulty']}")
+        st.info(f"**Business Problem:** {selected_proj['business_problem']}")
+        st.write("**Suggested Dataset:**", selected_proj["dataset_idea"])
+
+        st.markdown("##### Step-by-Step Execution Checklist")
+        for s_idx, step_text in enumerate(selected_proj["steps"], 1):
+            st.checkbox(f"{s_idx}. {step_text}", key=f"pstep_{selected_proj['id']}_{s_idx}")
+
+    with p_right:
+        st.markdown("#### Resume Bullet Builder")
+        st.caption("Fill in real numbers from your project (or keep brackets as reminders until measured).")
+
+        m1, m2 = st.columns(2)
+        vol_val = m1.text_input("Rows / Records", value="25,000+", key=f"m_vol_{selected_proj['id']}")
+        pct_val = m2.text_input("Key % / Metric", value="14%", key=f"m_pct_{selected_proj['id']}")
+        seg_val = st.text_input("Scope (Categories / Months / Tools)", value="6 categories & 12 months", key=f"m_seg_{selected_proj['id']}")
+
+        bullets = build_resume_bullets(
+            selected_proj,
+            {
+                "X,000+": vol_val,
+                "X%": pct_val,
+                "X": seg_val,
+                "one-time, repeat, and high-value": seg_val,
+                "Power BI / Excel": "Power BI",
+                "SQL / Python Pandas": "SQL and Python (Pandas)",
+            },
         )
-        st.write_stream(stream_ai_tutor(pd_prompt, gemini_key))
+
+        st.markdown("##### Draft Resume Bullets")
+        for b in bullets:
+            st.markdown(f"- {b}")
+
+        st.code("\n".join(f"• {b}" for b in bullets), language="text")
+
+        if st.button("Polish Bullets with AI Tutor", key=f"btn_polish_{selected_proj['id']}", use_container_width=True):
+            polish_prompt = (
+                f"Rewrite these Data Analyst fresher resume bullets to be punchy, action-verb-led, and ATS-friendly "
+                f"for project '{selected_proj['title']}' ({', '.join(selected_proj['stack'])}):\n"
+                + "\n".join(f"- {b}" for b in bullets)
+                + "\nProvide 3 tightened bullets plus 1 quick interview talking point."
+            )
+            st.write_stream(stream_ai_tutor(polish_prompt, gemini_key))
