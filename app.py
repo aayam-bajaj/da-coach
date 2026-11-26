@@ -1,3 +1,4 @@
+from pandas_sandbox import PANDAS_CHALLENGES, get_messy_orders_df, run_pandas_sandbox
 import json
 import sqlite3
 from datetime import date, datetime, timedelta
@@ -311,13 +312,14 @@ k4.metric("Est. Weeks Left", f"{round(remaining_hrs / weekly_budget, 1) if weekl
 
 st.progress(readiness_pct / 100)
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🏋️ Training Queue",
     "🧪 Skill Check",
     "📘 Cheatsheets & Drills",
     "📅 Daily Log",
     "💻 SQL Sandbox",
     "🤖 AI Tutor",
+    "🐼 Pandas Sandbox",
 ])
 
 # TAB 1: Dynamic Roadmap + Curated Videos
@@ -503,3 +505,45 @@ with tab6:
         weak_skills = [k for k, v in skills.items() if v == 0]
         full_prompt = f"Mode: {mode} | Unstarted tracks: {weak_skills} | Request: {topic_input.strip()}"
         st.write_stream(stream_ai_tutor(full_prompt, gemini_key))
+
+# TAB 7: Interactive Pandas Data Cleaning Sandbox
+with tab7:
+    st.subheader("Pandas Data Cleaning Sandbox")
+    with st.expander("Preview Raw Messy Dataset (`orders`)", expanded=False):
+        st.dataframe(get_messy_orders_df(), use_container_width=True)
+
+    p_titles = [c["title"] for c in PANDAS_CHALLENGES]
+    chosen_p = st.selectbox("Select Cleaning Challenge", p_titles)
+    p_challenge = next(c for c in PANDAS_CHALLENGES if c["title"] == chosen_p)
+
+    st.info(p_challenge["prompt"])
+    user_py = st.text_area(
+        "Write your Pandas code (`df` is preloaded):",
+        value=p_challenge["starter_code"],
+        height=150,
+        key=f"pd_code_{chosen_p}",
+    )
+
+    b_run, b_ai = st.columns(2)
+    run_pd = b_run.button("Run & Check Cleaning", type="primary", use_container_width=True)
+    ask_pd_ai = b_ai.button("Ask AI Tutor to Review Pandas", use_container_width=True)
+
+    if run_pd and user_py.strip():
+        out_df, nulls, err, passed = run_pandas_sandbox(user_py, p_challenge)
+        if err:
+            st.error(err)
+        else:
+            st.dataframe(out_df, use_container_width=True)
+            st.caption(f"Null counts after run: {nulls}")
+            if passed:
+                st.success(p_challenge["success_msg"])
+            else:
+                st.warning("Code ran, but one or more cleaning requirements aren't met yet.")
+
+    if ask_pd_ai and user_py.strip():
+        pd_prompt = (
+            f"Data cleaning task: {p_challenge['prompt']}\n"
+            f"User's Pandas code:\n```python\n{user_py}\n```\n"
+            "Give a brief, practical hint on fixing any bugs or edge cases without giving away the full solution."
+        )
+        st.write_stream(stream_ai_tutor(pd_prompt, gemini_key))
