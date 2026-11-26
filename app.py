@@ -32,121 +32,240 @@ from ats_engine import analyze_jd_match, compute_track_scorecard, generate_proje
 from ai_tutor import stream_ai_tutor
 
 st.set_page_config(
-    page_title="DA Coach — Data Analyst Studio",
-    page_icon="📊",
+    page_title="DA STUDIO // ANALYTICS WORKBENCH",
+    page_icon="◼",
     layout="wide",
 )
 
 st.markdown(
     """
     <style>
-    /* Liquid Chrome Obsidian Canvas */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+    /* Architectural Obsidian Base */
     .stApp {
-        background: radial-gradient(circle at 12% 6%, #222736 0%, #0A0C12 48%, #050609 100%);
-        color: #F8FAFC;
+        background-color: #09090B;
+        color: #FAFAFA;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     .block-container {
-        padding-top: 1.35rem;
-        padding-bottom: 2.6rem;
-        max-width: 1320px;
+        padding-top: 1.6rem;
+        padding-bottom: 3rem;
+        max-width: 1360px;
     }
 
-    /* Metallic Chrome Header */
+    /* Bold Editorial Header */
     h1 {
-        background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 30%, #64748B 50%, #F8FAFC 76%, #94A3B8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800 !important;
-        letter-spacing: -0.03em;
-        margin-bottom: 0.15rem !important;
+        color: #FFFFFF !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 900 !important;
+        font-size: 2.35rem !important;
+        letter-spacing: -0.045em !important;
+        line-height: 1.1 !important;
+        margin-bottom: 0.25rem !important;
+    }
+    h2, h3, h4 {
+        color: #F4F4F5 !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.025em !important;
     }
 
-    /* Frosted Chrome Metric Cards */
+    /* Hairline Architectural KPI Cards */
     div[data-testid="stMetric"] {
-        background: linear-gradient(145deg, rgba(32, 38, 52, 0.74), rgba(11, 13, 20, 0.90));
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(226, 232, 240, 0.16);
-        border-top: 1px solid rgba(255, 255, 255, 0.36);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-        padding: 14px 18px;
-        border-radius: 14px;
+        background-color: #111114;
+        border: 1px solid #27272A;
+        border-top: 2px solid #E4E4E7;
+        padding: 16px 20px;
+        border-radius: 6px;
+        box-shadow: none;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #A1A1AA !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.08em !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 1.85rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.03em !important;
     }
 
-    /* Tabs Bar Polish */
+    /* Sharp Progress Bar */
+    div[data-testid="stProgress"] > div > div {
+        background-color: #27272A !important;
+        height: 6px !important;
+        border-radius: 2px !important;
+    }
+    div[data-testid="stProgress"] > div > div > div {
+        background-color: #FAFAFA !important;
+        border-radius: 2px !important;
+    }
+
+    /* Precision Navigation Tabs */
     div[data-baseweb="tab-list"] {
-        gap: 6px;
-        border-bottom: 1px solid rgba(203, 213, 225, 0.14);
+        gap: 0px;
+        border-bottom: 1px solid #27272A;
+        margin-bottom: 1rem;
     }
     button[data-baseweb="tab"] {
-        border-radius: 9px 9px 0 0 !important;
-        padding: 8px 14px !important;
+        background: transparent !important;
+        color: #71717A !important;
+        border-radius: 0px !important;
+        padding: 10px 18px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.88rem !important;
         font-weight: 600 !important;
+        letter-spacing: -0.01em !important;
+        border-bottom: 2px solid transparent !important;
+        transition: color 0.12s ease, border-color 0.12s ease;
+    }
+    button[data-baseweb="tab"]:hover {
+        color: #E4E4E7 !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(180deg, rgba(248, 250, 252, 0.12), rgba(248, 250, 252, 0.04)) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
+        color: #FFFFFF !important;
+        border-bottom: 2px solid #FFFFFF !important;
     }
 
-    /* Glass Expanders & Code Containers */
+    /* Crisp Expanders & Containers */
     div[data-testid="stExpander"] {
-        background: rgba(16, 19, 28, 0.72);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(203, 213, 225, 0.14);
-        border-radius: 12px;
+        background-color: #111114;
+        border: 1px solid #27272A;
+        border-radius: 6px;
     }
-    textarea, input {
-        border-radius: 10px !important;
+    div[data-testid="stExpander"] summary {
+        font-weight: 600 !important;
+        color: #F4F4F5 !important;
     }
 
-    /* Liquid Silver Primary Buttons */
+    /* Code Editors & Inputs */
+    textarea, input, select {
+        background-color: #0D0D10 !important;
+        border: 1px solid #27272A !important;
+        color: #FAFAFA !important;
+        border-radius: 6px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.86rem !important;
+    }
+    textarea:focus, input:focus {
+        border-color: #A1A1AA !important;
+        box-shadow: none !important;
+    }
+
+    /* High-Contrast Tactile Primary Button */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 52%, #94A3B8 100%) !important;
-        color: #090A0F !important;
+        background-color: #FAFAFA !important;
+        color: #09090B !important;
+        font-family: 'Inter', sans-serif !important;
         font-weight: 700 !important;
-        border: 1px solid #FFFFFF !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 16px rgba(226, 232, 240, 0.22);
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        font-size: 0.86rem !important;
+        letter-spacing: -0.01em !important;
+        border: 1px solid #FAFAFA !important;
+        border-radius: 6px !important;
+        padding: 0.45rem 1rem !important;
+        box-shadow: none !important;
+        transition: background-color 0.12s ease;
     }
     button[kind="primary"]:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 7px 22px rgba(255, 255, 255, 0.34);
+        background-color: #D4D4D8 !important;
+        border-color: #D4D4D8 !important;
     }
 
-    /* Sidebar Chrome Rail */
+    /* Secondary Buttons */
+    button[kind="secondary"] {
+        background-color: #141417 !important;
+        color: #E4E4E7 !important;
+        border: 1px solid #27272A !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+    }
+    button[kind="secondary"]:hover {
+        border-color: #52525B !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Sidebar Architectural Rail */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0D1018 0%, #07080D 100%);
-        border-right: 1px solid rgba(203, 213, 225, 0.12);
+        background-color: #0C0C0E;
+        border-right: 1px solid #27272A;
+    }
+    section[data-testid="stSidebar"] h3 {
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.76rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.08em !important;
+        color: #A1A1AA !important;
+        margin-top: 0.5rem !important;
     }
 
-    /* Chrome Pill Badges */
-    .chrome-pill {
+    /* Industrial Monospace Tags */
+    .spec-tag {
         display: inline-block;
-        padding: 3px 10px;
-        margin: 2px 4px 2px 0;
-        border-radius: 999px;
-        font-size: 0.78rem;
+        padding: 3px 8px;
+        margin: 2px 5px 2px 0;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.72rem;
         font-weight: 600;
-        background: rgba(226, 232, 240, 0.10);
-        border: 1px solid rgba(226, 232, 240, 0.24);
-        color: #F1F5F9;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background-color: #18181B;
+        border: 1px solid #3F3F46;
+        color: #E4E4E7;
     }
-    .chrome-pill-ok {
-        background: rgba(16, 185, 129, 0.16);
-        border-color: rgba(52, 211, 153, 0.42);
-        color: #A7F3D0;
+    .spec-tag-ok {
+        background-color: rgba(16, 185, 129, 0.10);
+        border-color: #10B981;
+        color: #6EE7B7;
     }
-    .chrome-pill-gap {
-        background: rgba(245, 158, 11, 0.16);
-        border-color: rgba(251, 191, 36, 0.42);
-        color: #FDE68A;
+    .spec-tag-gap {
+        background-color: rgba(245, 158, 11, 0.10);
+        border-color: #F59E0B;
+        color: #FCD34D;
     }
-    .scorecard-box {
-        background: rgba(18, 22, 32, 0.78);
-        border: 1px solid rgba(203, 213, 225, 0.16);
-        border-radius: 12px;
-        padding: 12px 14px;
+
+    /* Scorecard Grid Cells */
+    .scorecard-cell {
+        background-color: #111114;
+        border: 1px solid #27272A;
+        border-radius: 6px;
+        padding: 14px 16px;
+    }
+    .scorecard-cell-ready {
+        border-left: 3px solid #10B981;
+    }
+    .scorecard-cell-progress {
+        border-left: 3px solid #E4E4E7;
+    }
+    .scorecard-cell-gap {
+        border-left: 3px solid #F59E0B;
+    }
+
+    /* Clean Next-Up Dispatch Bar */
+    .dispatch-bar {
+        background-color: #111114;
+        border: 1px solid #27272A;
+        border-left: 3px solid #FAFAFA;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin: 10px 0 18px 0;
+        font-size: 0.92rem;
+        color: #E4E4E7;
+    }
+    .dispatch-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #A1A1AA;
+        margin-right: 8px;
     }
     </style>
     """,
@@ -154,12 +273,12 @@ st.markdown(
 )
 
 
-def render_pills(items: list[str], variant: str = "default") -> str:
-    cls = "chrome-pill"
+def render_tags(items: list[str], variant: str = "default") -> str:
+    cls = "spec-tag"
     if variant == "ok":
-        cls += " chrome-pill-ok"
+        cls += " spec-tag-ok"
     elif variant == "gap":
-        cls += " chrome-pill-gap"
+        cls += " spec-tag-gap"
     return "".join(f'<span class="{cls}">{item}</span>' for item in items)
 
 
@@ -239,7 +358,7 @@ conn = get_conn()
 
 # --- Sidebar ---
 with st.sidebar:
-    st.markdown("### 🎯 Skill Calibration")
+    st.markdown("### 01 // Skill Calibration")
     skills = {
         "Excel": st.slider("Excel", 0, 3, 3, key="sk_excel"),
         "Power BI": st.slider("Power BI / Tableau", 0, 3, 3, key="sk_bi"),
@@ -248,12 +367,12 @@ with st.sidebar:
         "Stats": st.slider("Business Stats", 0, 3, 0, key="sk_stats"),
     }
 
-    st.markdown("### ⏱️ Weekly Schedule")
+    st.markdown("### 02 // Weekly Cadence")
     hours_per_day = st.selectbox("Hours / day", [1, 2, 3, 4], index=1, key="sched_hpd")
     days_per_week = st.slider("Study days / week", 3, 7, 5, key="sched_dpw")
     weekly_budget = hours_per_day * days_per_week
 
-    st.markdown("### 🤖 AI Tutor Key")
+    st.markdown("### 03 // AI Engine Key")
     gemini_key = st.text_input(
         "Gemini API Key (optional if set in Secrets)",
         type="password",
@@ -264,23 +383,23 @@ with st.sidebar:
     st.divider()
     streak, total_logged_hrs, history = get_streak_and_hours(conn)
     c1, c2 = st.columns(2)
-    c1.metric("Streak", f"{streak}d")
-    c2.metric("Logged", f"{total_logged_hrs}h")
+    c1.metric("STREAK", f"{streak}D")
+    c2.metric("LOGGED", f"{total_logged_hrs}H")
 
     st.divider()
-    st.markdown("### 💾 Backup & Restore")
+    st.markdown("### 04 // State Backup")
     st.download_button(
-        "Export Progress JSON",
+        "Export JSON Snapshot",
         data=export_progress_json(conn),
         file_name="da_coach_progress.json",
         mime="application/json",
         use_container_width=True,
     )
     uploaded_backup = st.file_uploader("Restore JSON", type=["json"], label_visibility="collapsed", key="backup_up")
-    if uploaded_backup is not None and st.button("Import Backup", use_container_width=True, key="backup_apply"):
+    if uploaded_backup is not None and st.button("Apply Snapshot", use_container_width=True, key="backup_apply"):
         try:
             import_progress_json(conn, uploaded_backup.getvalue().decode("utf-8"))
-            st.success("Progress restored.")
+            st.success("State restored.")
             st.rerun()
         except Exception as e:
             st.error(f"Invalid backup file: {e}")
@@ -298,71 +417,92 @@ est_weeks_left = round(remaining_hrs / weekly_budget, 1) if weekly_budget else 0
 next_mod = next((m for m in queue if m["module_id"] not in completed_ids), None)
 
 # --- Header & KPI Strip ---
+st.markdown(
+    '<div style="font-family:\'JetBrains Mono\',monospace; font-size:0.74rem; color:#A1A1AA; '
+    'letter-spacing:0.12em; text-transform:uppercase; margin-bottom:4px;">'
+    'DATA ANALYST WORKBENCH // V3.0</div>',
+    unsafe_allow_html=True,
+)
 st.title("Data Analyst Prep Studio")
-st.caption("Calibrated study roadmap • SQL & Pandas sandboxes • ATS JD matcher & portfolio builder")
+st.markdown(
+    '<div style="color:#A1A1AA; font-size:0.95rem; margin-bottom:16px;">'
+    'Calibrated curriculum execution, live SQL/Pandas sandboxes, and ATS job-description alignment.'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Job Readiness", f"{readiness_pct}%")
-k2.metric("Modules Done", f"{done_count}/{total_required}")
-k3.metric("Weekly Target", f"{weekly_budget} hrs")
-k4.metric("Est. Weeks Left", f"{est_weeks_left}")
+k1.metric("READINESS", f"{readiness_pct}%")
+k2.metric("COMPLETED", f"{done_count}/{total_required}")
+k3.metric("WEEKLY BUDGET", f"{weekly_budget} HRS")
+k4.metric("EST. RUNWAY", f"{est_weeks_left} WKS")
 
 st.progress(readiness_pct / 100)
 
 if next_mod:
-    st.info(
-        f"**Next Up ({hours_per_day}h target):** [{next_mod['track']}] **{next_mod['title']}** "
-        f"({next_mod['estimated_hours']}h est.) — watch a curated playlist, drill the topic, and check it off."
+    st.markdown(
+        f'<div class="dispatch-bar">'
+        f'<span class="dispatch-label">NEXT PRIORITY // {hours_per_day}H BLOCK</span>'
+        f'<strong>[{next_mod["track"]}] {next_mod["title"]}</strong> '
+        f'<span style="color:#A1A1AA;">({next_mod["estimated_hours"]}h est.)</span>'
+        f'</div>',
+        unsafe_allow_html=True,
     )
 else:
     st.success("All queued modules completed for your current skill calibration.")
 
 # --- 5 Clean Primary Modes ---
 tab_plan, tab_lab, tab_study, tab_routine, tab_portfolio = st.tabs([
-    "🏋️ Workout Plan",
-    "💻 Practice Lab",
-    "📘 Study & AI Coach",
-    "📅 Routine & Check",
-    "🚀 Portfolio & ATS",
+    "01 · ROADMAP",
+    "02 · SQL & PANDAS LAB",
+    "03 · STUDY VAULT & AI",
+    "04 · LOG & SKILL GATE",
+    "05 · PORTFOLIO & ATS",
 ])
 
-# 1. WORKOUT PLAN + INTERVIEW READINESS SCORECARD
+# 1. ROADMAP + INTERVIEW READINESS SCORECARD
 with tab_plan:
-    st.markdown("#### Interview Readiness Scorecard")
+    st.markdown("#### Track Readiness Matrix")
     scorecard = compute_track_scorecard(skills, queue, skipped, completed_ids)
     sc_cols = st.columns(len(scorecard))
     for col, item in zip(sc_cols, scorecard):
-        variant = "ok" if item["pct"] >= 80 else ("default" if item["pct"] >= 35 else "gap")
+        if item["pct"] >= 80:
+            variant, cell_cls = "ok", "scorecard-cell scorecard-cell-ready"
+        elif item["pct"] >= 35:
+            variant, cell_cls = "default", "scorecard-cell scorecard-cell-progress"
+        else:
+            variant, cell_cls = "gap", "scorecard-cell scorecard-cell-gap"
+
         with col:
             st.markdown(
                 f"""
-                <div class="scorecard-box">
-                    <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">{item['track']}</div>
-                    <div style="font-size:1.3rem; font-weight:800; margin-bottom:6px;">{item['pct']}%</div>
-                    {render_pills([item['status']], variant=variant)}
+                <div class="{cell_cls}">
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#A1A1AA; text-transform:uppercase; letter-spacing:0.06em;">{item['track']}</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:1.55rem; font-weight:700; color:#FFFFFF; margin:4px 0 8px 0;">{item['pct']}%</div>
+                    {render_tags([item['status']], variant=variant)}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
     st.divider()
-    left, right = st.columns([1, 2.3])
+    left, right = st.columns([1, 2.35])
     with left:
-        st.markdown("#### Skipped (Already Strong)")
+        st.markdown("#### Cleared Baseline")
         if skipped:
             for s in skipped:
-                st.markdown(f"- ✅ {s}")
+                st.markdown(f"- **`DONE`** {s}")
         else:
-            st.caption("No modules skipped at current slider levels.")
+            st.caption("No modules bypassed at current slider levels.")
 
     with right:
-        st.markdown("#### Active Training Queue")
+        st.markdown("#### Execution Queue")
         if not queue:
-            st.success("No remaining modules in queue.")
+            st.success("Queue clear.")
         for idx, mod in enumerate(queue, 1):
             is_done = mod["module_id"] in completed_ids
-            icon = "✅" if is_done else "⬜"
-            header = f"{icon} {idx}. [{mod['track']}] {mod['title']} — {mod['estimated_hours']}h"
+            state_badge = "[DONE]" if is_done else "[OPEN]"
+            header = f"{state_badge}  {idx:02d}. {mod['track']} — {mod['title']} ({mod['estimated_hours']}h)"
 
             with st.expander(header, expanded=(next_mod is not None and mod["module_id"] == next_mod["module_id"])):
                 checked = st.checkbox("Mark Module Complete", value=is_done, key=f"chk_{mod['module_id']}")
@@ -372,7 +512,7 @@ with tab_plan:
 
                 if mod["key_topics"]:
                     st.markdown(
-                        render_pills([str(t) for t in mod["key_topics"]]),
+                        render_tags([str(t) for t in mod["key_topics"]]),
                         unsafe_allow_html=True,
                     )
 
@@ -382,14 +522,14 @@ with tab_plan:
                 )
                 b1, b2, b3 = st.columns(3)
                 fetch_clicked = b1.button("Fetch Top Playlists", key=f"yt_{mod['module_id']}", use_container_width=True)
-                b2.link_button("Open YouTube Search", fallback_url, use_container_width=True)
-                guide_clicked = b3.button("Deep Study Guide", key=f"guide_{mod['module_id']}", use_container_width=True)
+                b2.link_button("YouTube Search", fallback_url, use_container_width=True)
+                guide_clicked = b3.button("Generate Study Guide", key=f"guide_{mod['module_id']}", use_container_width=True)
 
                 if fetch_clicked:
-                    with st.spinner("Searching YouTube..."):
+                    with st.spinner("Querying playlists..."):
                         videos = fetch_top_youtube_resources(mod["youtube_search_query"], max_results=3)
                         for v in videos:
-                            views_str = f" • {v['views']:,} views" if v.get("views") else ""
+                            views_str = f" · {v['views']:,} views" if v.get("views") else ""
                             st.markdown(f"- [{v['title']}]({v['url']}) — *{v['channel']}*{views_str}")
 
                 if guide_clicked:
@@ -406,25 +546,25 @@ with tab_plan:
 
 # 2. PRACTICE LAB (SQL + PANDAS SUB-TABS)
 with tab_lab:
-    sub_sql, sub_pd = st.tabs(["💻 SQL Sandbox", "🐼 Pandas Cleaning Sandbox"])
+    sub_sql, sub_pd = st.tabs(["SQLITE SANDBOX", "PANDAS CLEANING LAB"])
 
     with sub_sql:
         col_prompt, col_editor = st.columns([1, 1.35])
         with col_prompt:
-            st.markdown("#### Challenge")
+            st.markdown("#### Specification")
             challenge_titles = [c["title"] for c in SQL_CHALLENGES]
             chosen_sql_title = st.selectbox("Select SQL Challenge", challenge_titles, key="sql_sel")
             sql_challenge = next(c for c in SQL_CHALLENGES if c["title"] == chosen_sql_title)
             st.info(sql_challenge["prompt"])
 
             for h_idx, hint_text in enumerate(sql_challenge.get("hints", []), 1):
-                with st.expander(f"💡 Progressive Hint {h_idx}"):
+                with st.expander(f"Hint 0{h_idx}"):
                     st.write(hint_text)
 
-            with st.expander("👀 Expected Output Preview"):
+            with st.expander("Expected Output Schema & Rows"):
                 st.dataframe(get_expected_preview(sql_challenge["solution"]), use_container_width=True)
 
-            with st.expander("Database Schema (`customers`, `products`, `orders`)", expanded=False):
+            with st.expander("Database Tables (`customers`, `products`, `orders`)", expanded=False):
                 st.code(
                     "customers(customer_id, name, city, segment, signup_date)\n"
                     "products(product_id, product_name, category, unit_price)\n"
@@ -433,7 +573,7 @@ with tab_lab:
                 )
 
         with col_editor:
-            st.markdown("#### Query Editor")
+            st.markdown("#### Query Console")
             sql_state_key = f"sql_draft_{chosen_sql_title}"
             if sql_state_key not in st.session_state:
                 st.session_state[sql_state_key] = ""
@@ -441,7 +581,7 @@ with tab_lab:
             user_sql = st.text_area(
                 "SQL Query",
                 value=st.session_state[sql_state_key],
-                height=180,
+                height=190,
                 placeholder="SELECT ...",
                 key=f"sql_area_{chosen_sql_title}",
                 label_visibility="collapsed",
@@ -449,8 +589,8 @@ with tab_lab:
             st.session_state[sql_state_key] = user_sql
 
             c_run, c_hint = st.columns(2)
-            run_sql = c_run.button("Run & Grade SQL", type="primary", use_container_width=True, key="btn_run_sql")
-            ai_sql_hint = c_hint.button("AI Hint on Query", use_container_width=True, key="btn_hint_sql")
+            run_sql = c_run.button("Execute & Validate", type="primary", use_container_width=True, key="btn_run_sql")
+            ai_sql_hint = c_hint.button("AI Code Review", use_container_width=True, key="btn_hint_sql")
 
             if run_sql and user_sql.strip():
                 df_out, err, passed = execute_and_grade(user_sql, sql_challenge["solution"])
@@ -459,9 +599,9 @@ with tab_lab:
                 else:
                     st.dataframe(df_out, use_container_width=True)
                     if passed:
-                        st.success("Exact match! Challenge solved.")
+                        st.success("PASS // Exact output match.")
                     else:
-                        st.warning("Query executed, but rows or values do not match expected output yet.")
+                        st.warning("MISMATCH // Query ran, but rows or values differ from expected output.")
 
             if ai_sql_hint and user_sql.strip():
                 review_prompt = (
@@ -474,24 +614,24 @@ with tab_lab:
     with sub_pd:
         p_col_left, p_col_right = st.columns([1, 1.35])
         with p_col_left:
-            st.markdown("#### Cleaning Task")
+            st.markdown("#### Specification")
             p_titles = [c["title"] for c in PANDAS_CHALLENGES]
             chosen_p_title = st.selectbox("Select Pandas Challenge", p_titles, key="pd_sel")
             p_challenge = next(c for c in PANDAS_CHALLENGES if c["title"] == chosen_p_title)
             st.info(p_challenge["prompt"])
 
             for h_idx, hint_text in enumerate(p_challenge.get("hints", []), 1):
-                with st.expander(f"💡 Progressive Hint {h_idx}"):
+                with st.expander(f"Hint 0{h_idx}"):
                     st.write(hint_text)
 
-            with st.expander("✅ Reference Solution"):
+            with st.expander("Reference Implementation"):
                 st.code(p_challenge.get("solution_code", ""), language="python")
 
-            with st.expander("Preview Raw Messy Dataset (`orders`)", expanded=False):
+            with st.expander("Raw Input Dataset (`orders`)", expanded=False):
                 st.dataframe(get_messy_orders_df(), use_container_width=True)
 
         with p_col_right:
-            st.markdown("#### Pandas Code (`df` Preloaded)")
+            st.markdown("#### Python Console (`df` Preloaded)")
             pd_state_key = f"pd_draft_{chosen_p_title}"
             if pd_state_key not in st.session_state:
                 st.session_state[pd_state_key] = p_challenge["starter_code"]
@@ -499,15 +639,15 @@ with tab_lab:
             user_py = st.text_area(
                 "Pandas Code",
                 value=st.session_state[pd_state_key],
-                height=180,
+                height=190,
                 key=f"pd_area_{chosen_p_title}",
                 label_visibility="collapsed",
             )
             st.session_state[pd_state_key] = user_py
 
             b_run, b_ai = st.columns(2)
-            run_pd = b_run.button("Run & Check Cleaning", type="primary", use_container_width=True, key="btn_run_pd")
-            ask_pd_ai = b_ai.button("AI Hint on Pandas", use_container_width=True, key="btn_hint_pd")
+            run_pd = b_run.button("Run & Validate", type="primary", use_container_width=True, key="btn_run_pd")
+            ask_pd_ai = b_ai.button("AI Code Review", use_container_width=True, key="btn_hint_pd")
 
             if run_pd and user_py.strip():
                 out_df, nulls, err, passed = run_pandas_sandbox(user_py, p_challenge)
@@ -515,11 +655,11 @@ with tab_lab:
                     st.error(err)
                 else:
                     st.dataframe(out_df, use_container_width=True)
-                    st.caption(f"Null counts after run: {nulls}")
+                    st.caption(f"Null audit: {nulls}")
                     if passed:
-                        st.success(p_challenge["success_msg"])
+                        st.success(f"PASS // {p_challenge['success_msg']}")
                     else:
-                        st.warning("Code ran, but one or more cleaning requirements are not met yet.")
+                        st.warning("MISMATCH // One or more cleaning assertions failed.")
 
             if ask_pd_ai and user_py.strip():
                 pd_prompt = (
@@ -531,7 +671,7 @@ with tab_lab:
 
 # 3. STUDY & AI COACH
 with tab_study:
-    sub_vault, sub_ai = st.tabs(["📘 Cheatsheets & Drills", "🤖 Live AI Tutor"])
+    sub_vault, sub_ai = st.tabs(["REFERENCE VAULT", "AI INTERVIEW COACH"])
 
     with sub_vault:
         vault_items = (
@@ -540,14 +680,14 @@ with tab_study:
             else [(item.get("topic", f"Topic {i + 1}"), item) for i, item in enumerate(study_vault)]
         )
         topic_names = [name for name, _ in vault_items]
-        selected_topic = st.selectbox("Select Study Topic", topic_names, key="vault_topic")
+        selected_topic = st.selectbox("Select Reference Topic", topic_names, key="vault_topic")
         topic_data = dict(vault_items).get(selected_topic, {})
 
         st.markdown(topic_data.get("cheatsheet_markdown", "No cheatsheet available."))
         st.divider()
-        st.markdown("#### Practice Drills")
+        st.markdown("#### Drills")
         for d_idx, drill in enumerate(topic_data.get("drills", []), 1):
-            st.markdown(f"**Drill {d_idx}:** {drill.get('prompt')}")
+            st.markdown(f"**{d_idx:02d}.** {drill.get('prompt')}")
             c_h, c_s = st.columns(2)
             with c_h.expander("Hint"):
                 st.write(drill.get("hint", ""))
@@ -555,9 +695,9 @@ with tab_study:
                 st.code(drill.get("solution_code", ""), language="sql")
 
     with sub_ai:
-        st.markdown("#### Ask Your Data Analyst Coach")
+        st.markdown("#### Technical Coach Console")
         mode = st.radio(
-            "Response Mode",
+            "Mode",
             ["Generate Study Guide", "Explain Concept", "Mock Interview Question"],
             horizontal=True,
             key="ai_mode",
@@ -566,51 +706,51 @@ with tab_study:
         topic_input = st.text_input(
             "Topic or Question",
             value=default_topic,
-            placeholder="e.g., Window functions vs GROUP BY, or explain p-value in A/B testing",
+            placeholder="e.g., Window functions vs GROUP BY, or p-value in A/B testing",
             key="ai_topic_input",
         )
-        if st.button("Ask Coach", type="primary", key="btn_ask_coach") and topic_input.strip():
+        if st.button("Run Prompt", type="primary", key="btn_ask_coach") and topic_input.strip():
             weak_skills = [k for k, v in skills.items() if v == 0]
             full_prompt = f"Mode: {mode} | Unstarted tracks: {weak_skills} | Request: {topic_input.strip()}"
             st.write_stream(stream_ai_tutor(full_prompt, gemini_key))
 
 # 4. ROUTINE & SKILL CHECK
 with tab_routine:
-    sub_log, sub_diag = st.tabs(["📅 Daily Study Log", "🧪 Skill Verification Gate"])
+    sub_log, sub_diag = st.tabs(["SESSION LOG", "SKILL VERIFICATION GATE"])
 
     with sub_log:
         col_form, col_hist = st.columns([1.2, 1])
         with col_form:
-            st.markdown("#### Log Today's Session")
+            st.markdown("#### Log Work Block")
             with st.form("daily_log_form"):
                 c_d, c_h = st.columns(2)
                 log_day = c_d.date_input("Date", value=date.today())
-                hrs = c_h.number_input("Hours studied", min_value=0.5, max_value=12.0, value=float(hours_per_day), step=0.5)
-                notes = st.text_input("Session notes", placeholder="e.g., Completed SQL Joins + 2 drills")
-                saved = st.form_submit_button("Save Session", type="primary", use_container_width=True)
+                hrs = c_h.number_input("Hours", min_value=0.5, max_value=12.0, value=float(hours_per_day), step=0.5)
+                notes = st.text_input("Deliverable / Notes", placeholder="e.g., Completed SQL Joins + 2 drills")
+                saved = st.form_submit_button("Commit Session", type="primary", use_container_width=True)
 
             if saved:
                 log_study_session(conn, log_day.isoformat(), hrs, notes)
-                st.success("Session saved.")
+                st.success("Session logged.")
                 st.rerun()
 
         with col_hist:
-            st.markdown("#### Recent Sessions")
+            st.markdown("#### History")
             if history:
                 for dt_str, h, n in history[:8]:
                     note_part = f" — {n}" if n else ""
-                    st.markdown(f"- **{dt_str}**: {h}h{note_part}")
+                    st.markdown(f"- **`{dt_str}`** · {h}h{note_part}")
             else:
-                st.caption("No study sessions logged yet.")
+                st.caption("No sessions recorded.")
 
     with sub_diag:
         claimed_strong = [k for k, v in skills.items() if v >= 2]
         if not claimed_strong:
-            st.info("Slide any skill to Level 2 or 3 in the sidebar to verify your strength before skipping modules.")
+            st.info("Set any skill slider to Level 2 or 3 in the sidebar to verify your baseline before bypassing modules.")
         else:
             q_list = diagnostic_quiz if isinstance(diagnostic_quiz, list) else diagnostic_quiz.get("questions", [])
             relevant_qs = [q for q in q_list if q.get("track") in claimed_strong]
-            st.markdown(f"#### Max-Rep Check: {', '.join(claimed_strong)}")
+            st.markdown(f"#### Verification Gate: {', '.join(claimed_strong)}")
 
             if not relevant_qs:
                 st.caption("No diagnostic questions found for the selected tracks.")
@@ -618,33 +758,33 @@ with tab_routine:
                 with st.form("diag_form"):
                     answers = {}
                     for i, q in enumerate(relevant_qs):
-                        st.markdown(f"**{i + 1}. [{q.get('track')}] {q.get('question')}**")
+                        st.markdown(f"**{i + 1:02d}. [{q.get('track')}] {q.get('question')}**")
                         answers[i] = st.radio(
                             f"q_{i}",
                             q.get("options", []),
                             key=f"diag_{i}",
                             label_visibility="collapsed",
                         )
-                    submit_diag = st.form_submit_button("Check Score", type="primary")
+                    submit_diag = st.form_submit_button("Evaluate Baseline", type="primary")
 
                 if submit_diag:
                     score = sum(1 for i, q in enumerate(relevant_qs) if answers.get(i) == q.get("answer"))
                     for i, q in enumerate(relevant_qs):
                         if answers.get(i) != q.get("answer"):
-                            st.warning(f"Q{i + 1} [{q.get('track')}]: {q.get('explanation')}")
+                            st.warning(f"Q{i + 1:02d} [{q.get('track')}]: {q.get('explanation')}")
                     pct = round((score / len(relevant_qs)) * 100)
                     if pct >= 80:
-                        st.success(f"Passed ({pct}%) — skipped modules stay unlocked.")
+                        st.success(f"VERIFIED ({pct}%) — Bypassed modules confirmed.")
                     else:
-                        st.error(f"Scored {pct}% — consider dropping that slider by 1 level.")
+                        st.error(f"BELOW THRESHOLD ({pct}%) — Lower the slider by 1 level to include fundamentals.")
 
 # 5. PORTFOLIO & ATS CAREER STUDIO
 with tab_portfolio:
-    sub_proj, sub_ats = st.tabs(["🚀 Portfolio & GitHub README", "🎯 ATS JD Keyword & Gap Analyzer"])
+    sub_proj, sub_ats = st.tabs(["PORTFOLIO & README BUILDER", "ATS JD GAP ANALYZER"])
 
     with sub_proj:
         proj_titles = [f"{p['title']} ({p['est_days']})" for p in PORTFOLIO_PROJECTS]
-        chosen_proj_label = st.selectbox("Select a Project Blueprint", proj_titles, key="proj_sel")
+        chosen_proj_label = st.selectbox("Select Project Blueprint", proj_titles, key="proj_sel")
         selected_proj = PORTFOLIO_PROJECTS[proj_titles.index(chosen_proj_label)]
 
         p_left, p_right = st.columns([1.1, 1])
@@ -652,18 +792,18 @@ with tab_portfolio:
         with p_left:
             st.markdown(f"#### {selected_proj['title']}")
             st.markdown(
-                render_pills(selected_proj["stack"] + [selected_proj["difficulty"]]),
+                render_tags(selected_proj["stack"] + [selected_proj["difficulty"]]),
                 unsafe_allow_html=True,
             )
             st.info(f"**Business Problem:** {selected_proj['business_problem']}")
-            st.write("**Suggested Dataset:**", selected_proj["dataset_idea"])
+            st.write("**Dataset:**", selected_proj["dataset_idea"])
 
-            st.markdown("##### Step-by-Step Execution Checklist")
+            st.markdown("##### Execution Checklist")
             for s_idx, step_text in enumerate(selected_proj["steps"], 1):
-                st.checkbox(f"{s_idx}. {step_text}", key=f"pstep_{selected_proj['id']}_{s_idx}")
+                st.checkbox(f"{s_idx:02d}. {step_text}", key=f"pstep_{selected_proj['id']}_{s_idx}")
 
         with p_right:
-            st.markdown("#### Resume Bullet & GitHub README Builder")
+            st.markdown("#### Resume & GitHub Spec")
             m1, m2 = st.columns(2)
             vol_val = m1.text_input("Rows / Records", value="25,000+", key=f"m_vol_{selected_proj['id']}")
             pct_val = m2.text_input("Key % / Metric", value="14%", key=f"m_pct_{selected_proj['id']}")
@@ -683,14 +823,14 @@ with tab_portfolio:
             }
             bullets = build_resume_bullets(selected_proj, metric_map)
 
-            st.markdown("##### ATS-Ready Resume Bullets")
+            st.markdown("##### ATS Resume Bullets")
             st.code("\n".join(f"• {b}" for b in bullets), language="text")
 
-            with st.expander("📄 Copy-Ready GitHub `README.md` Template"):
+            with st.expander("GitHub `README.md` Template"):
                 readme_md = generate_project_readme(selected_proj, metric_map, bullets)
                 st.code(readme_md, language="markdown")
 
-            if st.button("Polish Bullets with AI Tutor", key=f"btn_polish_{selected_proj['id']}", use_container_width=True):
+            if st.button("Refine Bullets with AI", key=f"btn_polish_{selected_proj['id']}", use_container_width=True):
                 polish_prompt = (
                     f"Rewrite these Data Analyst fresher resume bullets to be punchy, action-verb-led, and ATS-friendly "
                     f"for project '{selected_proj['title']}' ({', '.join(selected_proj['stack'])}):\n"
@@ -700,39 +840,39 @@ with tab_portfolio:
                 st.write_stream(stream_ai_tutor(polish_prompt, gemini_key))
 
     with sub_ats:
-        st.markdown("#### Paste a Target Data Analyst Job Description")
+        st.markdown("#### Target Job Description Scanner")
         jd_input = st.text_area(
             "Job Description",
-            height=180,
+            height=190,
             placeholder="Paste requirements & responsibilities from a Data Analyst JD (SQL, Pandas, Power BI, cohort/funnel, A/B testing...)",
             key="jd_analyzer_text",
             label_visibility="collapsed",
         )
 
         a1, a2 = st.columns(2)
-        run_jd = a1.button("Run ATS Keyword & Gap Scan", type="primary", use_container_width=True, key="btn_run_jd")
-        ai_jd = a2.button("AI Deep JD Audit & Resume Tailoring", use_container_width=True, key="btn_ai_jd")
+        run_jd = a1.button("Run ATS Keyword Scan", type="primary", use_container_width=True, key="btn_run_jd")
+        ai_jd = a2.button("AI Deep JD Audit", use_container_width=True, key="btn_ai_jd")
 
         if run_jd and jd_input.strip():
             res = analyze_jd_match(jd_input, skills, completed_ids)
-            st.metric("Estimated ATS Keyword Coverage", f"{res['match_pct']}%")
+            st.metric("ATS KEYWORD COVERAGE", f"{res['match_pct']}%")
 
             c_ok, c_gap = st.columns(2)
             with c_ok:
-                st.markdown("**Matched Keywords (Covered by Your Profile)**")
+                st.markdown("**Covered Keywords**")
                 if res["matched"]:
-                    st.markdown(render_pills(res["matched"], variant="ok"), unsafe_allow_html=True)
+                    st.markdown(render_tags(res["matched"], variant="ok"), unsafe_allow_html=True)
                 else:
                     st.caption("No calibrated keywords matched yet.")
 
             with c_gap:
-                st.markdown("**Priority ATS Gaps to Close**")
+                st.markdown("**Missing ATS Keywords**")
                 if res["missing"]:
-                    st.markdown(render_pills(res["missing"], variant="gap"), unsafe_allow_html=True)
+                    st.markdown(render_tags(res["missing"], variant="gap"), unsafe_allow_html=True)
                 else:
-                    st.success("All detected JD keywords are covered!")
+                    st.success("All detected JD keywords covered.")
 
-            st.markdown("##### Suggested Gap-Closing Resume Bullets")
+            st.markdown("##### Gap-Closing Resume Bullets")
             st.code("\n".join(f"• {b}" for b in res["gap_bullets"]), language="text")
 
         if ai_jd and jd_input.strip():
